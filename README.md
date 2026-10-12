@@ -1,144 +1,94 @@
-# StudentMart — Student Used-Goods Marketplace
+# StudentMart
 
-> **Mua đồ cũ phù hợp. Bán lại dễ dàng. Trong chính cộng đồng sinh viên.**
+**Nền tảng mua bán đồ cũ dành cho sinh viên.**
 
-StudentMart là ứng dụng mobile hỗ trợ sinh viên mua, bán và trao đổi đồ đã qua sử dụng trong cùng trường hoặc khu vực gần nhau. Dự án hướng đến các giao dịch đơn giản, tiết kiệm và đáng tin cậy hơn so với việc tự tìm kiếm qua nhiều bài đăng trên mạng xã hội.
+StudentMart giúp sinh viên bán lại những món đồ không còn sử dụng và tìm mua sản phẩm phù hợp với ngân sách từ chính cộng đồng sinh viên.
 
-## 1. Links
+## StudentMart đang xây dựng gì?
 
-| Tài nguyên | Link |
-| --- | --- |
-| GitHub Organization | [L02-VibeCode](https://github.com/L02-VibeCode) |
-| Wiki - tài liệu dự án | [StudentMart Wiki](https://github.com/L02-VibeCode/StudentMart/wiki) |
-| Project board | TBD |
-| Research evidence | TBD |
-| Design | TBD |
+Việc mua bán đồ cũ khá phổ biến với sinh viên, đặc biệt khi chuyển trọ, kết thúc học kỳ hoặc cần tiết kiệm chi phí. Tuy nhiên, các tin đăng hiện thường nằm rải rác trên mạng xã hội, group mua bán hoặc các nền tảng chung.
 
-> Toàn bộ tài liệu của Assignment 1, bao gồm định hướng sản phẩm, evidence plan, market research, business canvas, MVP scope, user stories và user flows, sẽ được trình bày trên **Wiki**.
+StudentMart được định hướng là một ứng dụng mobile tập trung vào cộng đồng sinh viên, nơi người dùng có thể:
 
-## 2. Project Overview
+- Đăng bán sản phẩm kèm ảnh, thông tin và giá.
+- Tìm kiếm đồ cũ phù hợp với nhu cầu.
+- Lọc sản phẩm theo danh mục, mức giá hoặc khu vực gần.
+- Liên hệ với người bán để trao đổi về giao dịch.
 
-### Problem
+Sản phẩm tập trung vào nhu cầu và bối cảnh giao dịch của sinh viên, thay vì trở thành một marketplace công khai quá rộng.
 
-Sinh viên thường có đồ không còn sử dụng khi chuyển trọ, chuyển trường hoặc kết thúc học kỳ nhưng gặp khó khăn khi bán lại. Đồng thời, nhiều sinh viên cần mua đồ đã qua sử dụng với giá hợp lý nhưng phải tìm kiếm qua Facebook Marketplace, các group mua bán, Chợ Tốt hoặc người quen.
+## Phiên bản đầu tiên
 
-### Target Users
+Phiên bản đầu tiên tập trung vào một hành trình mua bán hoàn chỉnh:
 
-- Sinh viên đại học và cao đẳng muốn bán đồ cũ.
-- Sinh viên cần mua đồ đã qua sử dụng với ngân sách phù hợp.
-- Pilot ban đầu tập trung vào một trường hoặc một khu vực sinh viên cụ thể.
+```text
+Đăng bán sản phẩm
+    ↓
+Tìm kiếm hoặc xem sản phẩm
+    ↓
+Xem thông tin chi tiết
+    ↓
+Liên hệ người bán
+    ↓
+Thỏa thuận giao dịch
+```
 
-### Proposed Solution
+Các tính năng chưa thuộc phiên bản đầu tiên gồm thanh toán trực tuyến, vận chuyển, gợi ý bằng AI, tích điểm, dashboard cho người bán, quảng cáo trả phí và đấu giá.
 
-StudentMart cung cấp một marketplace dành riêng cho sinh viên. Người bán có thể đăng sản phẩm với ảnh, thông tin và giá; người mua có thể tìm kiếm, lọc, xem chi tiết và liên hệ người bán để thỏa thuận giao dịch.
+## Nguyên tắc phát triển sản phẩm
 
-Điểm định hướng chính của dự án là:
+- **Phù hợp với sinh viên:** Danh mục và trải nghiệm cần phản ánh nhu cầu thực tế của sinh viên.
+- **Ưu tiên giao dịch gần:** Hỗ trợ việc mua bán trong cùng trường hoặc khu vực sinh viên gần nhau.
+- **Đề cao sự tin cậy:** Thông tin sản phẩm rõ ràng và xác thực sinh viên quan trọng hơn việc thêm nhiều tính năng.
+- **Phát triển vừa đủ:** Mỗi tính năng mới phải hỗ trợ trực tiếp cho một hành động trong quy trình mua bán.
 
-- Tập trung vào cộng đồng sinh viên.
-- Ưu tiên giao dịch trong cùng trường hoặc khu vực gần nhau.
-- Hướng tới xác thực tài khoản sinh viên để tăng độ tin cậy.
-- Tập trung vào các nhóm sản phẩm có nhu cầu phổ biến với sinh viên.
+## Trạng thái phát triển
 
-## 3. Assignment 1 Status
+StudentMart hiện đang chuyển từ giai đoạn xác định định hướng sản phẩm sang lập kế hoạch cho MVP.
 
-Assignment 1 tập trung vào **Product Discovery and Foundation**, chưa phải giai đoạn xây dựng ứng dụng hoàn chỉnh.
+Các phần nhóm sẽ ưu tiên phát triển gồm:
 
-Các nội dung đang được hoàn thiện trên Wiki:
+1. Đăng sản phẩm.
+2. Tìm kiếm và lọc sản phẩm.
+3. Xem chi tiết sản phẩm.
+4. Liên hệ giữa người mua và người bán.
 
-- Project Direction
-- Mobile Product Rationale
-- Critical Assumptions and Evidence Plan
-- User and Market Research
-- Existing Solutions and Alternatives
-- Evidence Evaluation and Product Decisions
-- Business Canvas
-- MVP Scope and Prioritization
-- User Stories and Critical User Flows
-- Project Plan
+Công nghệ, nền tảng hỗ trợ và các dịch vụ tích hợp sẽ được cập nhật khi nhóm chốt và kiểm chứng phương án triển khai.
 
-## 4. MVP Scope
-
-### Core Value
-
-Giúp một sinh viên đăng bán đồ cũ dễ dàng và giúp sinh viên khác tìm, liên hệ và hoàn tất giao dịch với người bán trong cộng đồng của mình.
-
-### Core Flow
-
-**Seller:** Đăng nhập → Đăng ảnh, thông tin và giá sản phẩm → Đăng bán.
-
-**Buyer:** Đăng nhập → Tìm kiếm hoặc lọc sản phẩm → Xem chi tiết → Liên hệ/thỏa thuận với người bán → Hoàn tất giao dịch.
-
-### Out of Scope
-
-Các tính năng chủ động không thuộc MVP:
-
-- Thanh toán trực tuyến.
-- Hệ thống vận chuyển.
-- AI recommendation.
-- Seller analytics nâng cao.
-- Loyalty hoặc point system.
-- Livestream bán hàng, quảng cáo trả phí và đấu giá.
-
-## 5. Mobile Value
-
-StudentMart phù hợp với mobile vì sinh viên có thể:
-
-- Chụp ảnh và đăng bán đồ nhanh bằng camera.
-- Tìm sản phẩm hoặc người bán ở khu vực gần bằng location.
-- Nhận push notification cho tin nhắn và cập nhật giao dịch.
-- Tìm kiếm, đăng bán và liên hệ mọi lúc, mọi nơi.
-
-## 6. Tech Stack
-
-Công nghệ triển khai sẽ được chốt sau giai đoạn Assignment 1, dựa trên MVP và các rủi ro kỹ thuật đã được xác định.
-
-| Thành phần | Trạng thái |
-| --- | --- |
-| Mobile application | TBD |
-| Backend / API | TBD |
-| Database | TBD |
-| Authentication | TBD |
-| Location service | TBD |
-
-## 7. Planned Repository Structure
+## Cấu trúc repository dự kiến
 
 ```text
 StudentMart/
 ├── README.md
-├── mobile/          # Source code mobile application
-├── backend/         # API and backend services
-├── docs/            # Supporting documents and assets
-└── .github/         # Issue and pull request templates
+├── mobile/          # Mã nguồn ứng dụng mobile
+├── backend/         # API và các dịch vụ phía máy chủ
+├── docs/            # Tài liệu kỹ thuật và tài nguyên hỗ trợ
+└── .github/         # Cấu hình Issue và Pull Request
 ```
 
-## 8. Development Workflow
+## Quy trình làm việc
 
-Khi bước vào giai đoạn phát triển, nhóm sẽ sử dụng quy trình sau:
+Công việc phát triển được quản lý qua GitHub Issues và Project Board.
 
-| Branch | Purpose |
-| --- | --- |
-| `main` | Phiên bản ổn định, luôn có thể demo. |
-| `develop` | Nhánh tích hợp cho các tính năng đang phát triển. |
-| `feature/<task-name>` | Mỗi tính năng hoặc task sử dụng một nhánh riêng. |
-| `fix/<bug-name>` | Sửa lỗi. |
-| `docs/<topic>` | Cập nhật tài liệu. |
-
-Mỗi task nên tương ứng với một Issue trên GitHub Project. Sau khi hoàn thành, tạo Pull Request từ `feature/<task-name>` vào `develop` và được ít nhất một thành viên khác review trước khi merge.
-
-## 9. Working Principles
-
-- Không push trực tiếp vào `main`.
-- Mỗi task cần có owner và trạng thái rõ ràng trên GitHub Project.
-- Pull Request nên nhỏ, tập trung vào một thay đổi.
-- Không commit `.env`, API key hoặc thông tin bí mật.
-- Các quyết định sản phẩm phải có traceability:
+Mỗi thay đổi nên đi theo quy trình:
 
 ```text
-Evidence
-→ User Need
-→ Requirement
-→ User Story
-→ MVP Feature
-→ User Flow
-→ Development Task
+Issue
+  → Branch
+  → Pull Request
+  → Review
+  → Merge
 ```
+
+Mỗi task nên sử dụng một branch riêng. Không push trực tiếp vào `main`, đồng thời không đưa file môi trường, API key hoặc thông tin bí mật lên repository.
+
+## Tài liệu và kế hoạch
+
+- [Tài liệu sản phẩm](https://github.com/L02-VibeCode/StudentMart/wiki)
+- [GitHub Organization](https://github.com/L02-VibeCode)
+- Project Board: sẽ cập nhật sau
+- Thiết kế giao diện: sẽ cập nhật sau
+
+## Nhóm thực hiện
+
+Dự án được phát triển bởi nhóm **L02-VibeCode**.
