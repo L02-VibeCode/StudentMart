@@ -1,0 +1,48 @@
+# StudentMart Backend
+
+**Kiến trúc:** một backend Node.js chia module, mỗi module dùng Three-Layer: Controller → Service → Repository.
+
+Backend TypeScript đã khởi tạo bằng NestJS 11 với Fastify adapter. Đọc [solution_tree.md](../docs/solution_tree.md), [schema.md](../docs/schema.md) và [hướng dẫn agent](../stephen-skills/AGENTS.md).
+
+## Chạy cục bộ
+
+Yêu cầu Node.js 22.12+ và pnpm 10.34.3. Trong `backend/`:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm run start:dev
+pnpm run typecheck
+pnpm test
+pnpm run build
+pnpm start
+```
+
+Copy `.env.example` thành `.env` nếu muốn thay đổi cấu hình. Mặc định API lắng nghe `0.0.0.0:3000` để điện thoại cùng mạng LAN truy cập được. `GET /health` trả về `{"status":"ok"}`. `CORS_ORIGINS` là danh sách origin cách nhau bằng dấu phẩy cho browser client; ứng dụng native không bị browser CORS giới hạn.
+
+`DATABASE_URL` được đọc từ `backend/.env` khi khởi động và được kiểm tra trong `loadConfig()`. Tên database là `student-mart`; định dạng: `postgresql://USER:PASSWORD@HOST:5432/student-mart`. Các ký tự đặc biệt trong username/password cần URL-encode. Biến môi trường của process được ưu tiên hơn file `.env`. File `.env` và file nguồn credentials cục bộ `env-varibale.md` được Git ignore; `.env.example` chỉ chứa giá trị mẫu. Cấu hình connection string chưa tạo database, mở kết nối hay chạy migration.
+
+`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Test kiểm tra HTTP bằng Fastify injection, không cần database hoặc cổng mạng. Chưa cấu hình PostgreSQL/ORM/migration và chưa triển khai nghiệp vụ.
+
+## Đặt code ở đâu?
+
+| Vị trí | Trách nhiệm |
+|---|---|
+| src/modules/<module>/presentation/ | Route, Controller, validate HTTP và ánh xạ lỗi |
+| src/modules/<module>/business/ | Service, model và policy nghiệp vụ; không phụ thuộc request/response của framework |
+| src/modules/<module>/data/ | Repository/truy vấn các bảng module sở hữu, dùng transaction được truyền vào |
+| src/business/workflows/ | Transaction/use case phối hợp nhiều module |
+| src/shared/http/ | Middleware session và request context |
+| src/shared/database/ | Connection, transaction context và khóa/gate |
+| src/shared/providers/ | Adapter email/storage/push/crypto theo công nghệ được chọn |
+| src/shared/config/, src/shared/logging/ | Config và log được lọc |
+| src/bootstrap/, src/workers/ | Ghép dependency/lifecycle và công việc nền gọi business |
+| database/migrations/, seeds/, reference-data/ | Migration, seed và lookup đã chốt |
+| tests/unit/, integration/, support/ | Policy/service, API + PostgreSQL thật và fixture/provider fake |
+
+Module hiện có: auth, users, catalog, media, listings, chat, notifications, moderation, analytics. Mapping một chủ sở hữu cho mỗi bảng trong tổng 25 bảng nằm ở solution_tree.md.
+
+Controller không chứa SQL/nghiệp vụ; Repository không trả HTTP response. Service/workflow dùng cùng transaction qua các module; không commit message rồi tạo outbox trong một transaction khác. Worker dùng cùng kiểm tra quyền/binding với API.
+
+Giữ các bất biến: verify tùy chọn, không tự chat, một hội thoại/cặp người/tin, retry không trùng, lịch sử theo quyền, owner_state tách moderation_state. Framework đã chọn NestJS; không tự chốt ORM, provider hoặc nội dung lookup chưa được duyệt.
+
+Các .gitkeep chỉ giữ khung trong Git, bỏ khi có code thật. Backend dùng pnpm workspace với lockfile chung ở repository root và Vitest cho test. Công cụ migration chưa được chọn; không apply DB dùng chung chỉ vì đã tạo file migration.
