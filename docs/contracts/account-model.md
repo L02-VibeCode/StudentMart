@@ -128,3 +128,7 @@ Trước khi TASK-18 có nguồn xác thực thật, trả UNVERIFIED với scho
 - [Node crypto](https://nodejs.org/api/crypto.html): randomBytes, SHA-256 digest, async scrypt và timingSafeEqual.
 
 Nguồn kỹ thuật không thay thế quyết định sản phẩm StudentMart hoặc quyền apply database.
+
+## Bằng chứng review và kiểm chứng
+
+Xem [verification.md](verification.md) cho môi trường, công cụ, 40 ca schema payload, kết quả lint/typecheck/unit test và phần chưa được triển khai. Các ticket tiếp theo phải bổ sung evidence runtime thay vì dùng kết quả schema để đánh dấu API đã hoàn thành.
