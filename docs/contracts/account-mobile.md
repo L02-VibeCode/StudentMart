@@ -169,7 +169,7 @@ Không tự retry bất kỳ mutation nào (register, login, logout, PATCH profi
 
 Feature auth/profile dùng `presentation/` cho Screen và ViewModel hook, `business/` cho model/state/action, `data/` cho API DTO mapping/repository. Auth coordinator dùng điểm bootstrap/workflow dùng chung; screens không đọc SecureStore hay gọi fetch trực tiếp. Chưa thêm thư viện router/state để thực hiện tài liệu này.
 
-Khi có Figma được cung cấp cho ticket màn hình, đối chiếu frame thật trước triển khai. Ticket này chưa truy cập/đánh giá pixel theo Figma và không tuyên bố UI đã đạt thiết kế. Form native cần safe area, keyboard, chữ tiếng Việt, font scaling, nhãn accessibility, trạng thái focus và nút đủ vùng chạm. Các tiêu chí này trở thành checklist của ticket UI tương ứng, không yêu cầu dựng màn hình trong #83.
+Đã đối chiếu ảnh thiết kế cục bộ của design-system, login/register và profile/edit/verify; mapping và các chênh lệch ghi ở [account-design-review.md](account-design-review.md). Chưa truy cập file Figma trực tiếp, chưa dựng UI hoặc nghiệm thu pixel trên thiết bị. Khi có Figma cho ticket màn hình, đối chiếu frame thật trước triển khai. Form native cần safe area, keyboard, chữ tiếng Việt, font scaling, nhãn accessibility, trạng thái focus và nút đủ vùng chạm. Các tiêu chí này trở thành checklist của ticket UI tương ứng, không yêu cầu dựng màn hình trong #83.
 
 ## 10. Ma trận nghiệm thu dành cho bước triển khai
 

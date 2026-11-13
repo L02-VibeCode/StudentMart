@@ -41,3 +41,9 @@ Các giá trị fixture là dữ liệu tổng hợp phục vụ schema validati
 - Chưa chạy thiết bị/emulator, kiểm thử API end-to-end, database integration cho session mới hoặc merge PR #81.
 - Dataset trường/khu vực TASK-15 và provider avatar vẫn cần đầu vào được xác nhận; đã chốt shape/hợp đồng tích hợp, chưa giả định có dataset/provider thật.
 - Chưa tự đóng issue hoặc chuyển Done. Cần review baseline và dùng các ticket 16.02–16.10 để triển khai/kiểm chứng runtime.
+
+## Bổ sung cho sub-ticket #84 / #85
+
+Bộ schema checks trước đây chạy bằng lệnh tạm đã được lưu thành `tests/contracts/account-contract.test.cjs`, bổ sung thành **54 test** có thể tái chạy bằng `pnpm test:contracts`. Các package kiểm chứng được pin ở devDependencies root. `pnpm test` hiện chạy 54 contract tests và 8 unit test backend; cả 62 test cùng `pnpm typecheck` đã đạt khi hoàn thiện sub-ticket.
+
+Đối chiếu từng tiêu chí, đầu vào còn chờ và trạng thái review xem [acceptance.md](acceptance.md). Kết quả review thiết kế và các chênh lệch cần xử lý ở ticket UI nằm trong [account-design-review.md](account-design-review.md). Không có migration/database/runtime UI được thay đổi trong đợt bổ sung này.

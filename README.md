@@ -44,6 +44,8 @@ The backend includes PostgreSQL integration, the initial Account entity/migratio
 
 Baseline hợp đồng tài khoản TASK-16.01 (#83): [OpenAPI v1](docs/contracts/accounts.openapi.yaml), [mô hình tài khoản, phiên và migration dự kiến](docs/contracts/account-model.md), [hợp đồng tích hợp mobile](docs/contracts/account-mobile.md). Đây là đặc tả cho các ticket triển khai sau; endpoint chưa được triển khai bởi ticket hợp đồng. Dữ liệu lookup TASK-15 và provider avatar cần được xác nhận trước các phần phụ thuộc.
 
+Hai sub-ticket #84/#85 có [ma trận nghiệm thu](docs/contracts/acceptance.md), [review thiết kế mobile](docs/contracts/account-design-review.md) và [payload mẫu](docs/contracts/examples.json). Chạy `pnpm test:contracts` để kiểm tra schema/permission/projection cục bộ; `pnpm test` chạy cả contract tests và unit test backend.
+
 **Ứng dụng kết nối sinh viên mua, bán và trao đổi đồ cũ trong Làng Đại học ĐHQG TP.HCM.**
 
 StudentMart là nền tảng trung gian **C2C**, giúp người dùng đăng tin, tìm lựa chọn phù hợp và liên hệ trực tiếp với nhau. Hai bên tự thỏa thuận, gặp mặt, kiểm tra hàng và thanh toán hoặc trao đổi ngoài ứng dụng.
