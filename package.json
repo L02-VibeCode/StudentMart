@@ -1,0 +1,19 @@
+{
+  "name": "studentmart",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.3",
+  "engines": { "node": "^22.13.0 || ^24.3.0 || >=26.0.0" },
+  "scripts": {
+    "setup": "pnpm install --frozen-lockfile",
+    "dev": "concurrently --kill-others -n api,mobile \"pnpm run dev:backend\" \"pnpm run dev:mobile\"",
+    "dev:backend": "pnpm --filter studentmart-backend run start:dev",
+    "dev:mobile": "pnpm --filter studentmart-mobile start",
+    "android": "pnpm --filter studentmart-mobile run android",
+    "ios": "pnpm --filter studentmart-mobile run ios",
+    "build": "pnpm --filter studentmart-backend run build",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm --filter studentmart-backend test"
+  },
+  "devDependencies": { "concurrently": "^9.2.1" }
+}

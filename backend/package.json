@@ -1,0 +1,43 @@
+{
+  "name": "studentmart-backend",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "nest build",
+    "dev": "nest start --watch",
+    "start:dev": "nest start --watch",
+    "start": "node dist/bootstrap/server.js",
+    "test": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:create": "pnpm run build && node dist/shared/database/create-database.js",
+    "db:init": "pnpm run db:create && pnpm run migration:run",
+    "db:check": "pnpm run build && node dist/shared/database/check-database.js",
+    "migration:generate": "pnpm run build && typeorm migration:generate -d dist/shared/database/data-source.js",
+    "migration:run": "pnpm run build && typeorm migration:run -d dist/shared/database/data-source.js",
+    "migration:show": "pnpm run build && typeorm migration:show -d dist/shared/database/data-source.js",
+    "migration:revert": "pnpm run build && typeorm migration:revert -d dist/shared/database/data-source.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-fastify": "^11.0.0",
+    "@nestjs/typeorm": "^11.0.3",
+    "dotenv": "^17.2.3",
+    "pg": "^8.23.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typeorm": "~0.3.31",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.23.1",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

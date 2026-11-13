@@ -1,0 +1,10 @@
+.tools/
+build/
+dist/
+logs/
+rendered/
+__pycache__/
+reference/page-*.png
+reference/structure.json
+reference/source.xml
+reference/source-bbox.html

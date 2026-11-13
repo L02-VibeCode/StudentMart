@@ -1,0 +1,9 @@
+packages:
+  - backend
+  - mobile
+
+# Use Expo's default pnpm layout for React Native native-module compatibility.
+nodeLinker: hoisted
+
+onlyBuiltDependencies:
+  - esbuild

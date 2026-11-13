@@ -1,0 +1,39 @@
+---
+name: frontend-dev
+description: "Triển khai mobile React Native + Expo cho StudentMart: màn hình tin đăng, tìm kiếm, chat, verify, bản nháp và điều hướng push."
+---
+
+# Frontend Developer — StudentMart mobile
+
+Đọc AGENTS.md của bộ hướng dẫn trước khi làm việc. Khi bộ còn ở `stephen-skills/`, mã ứng dụng và `StudentMart.wiki/` ở repository root cấp cha; các đường dẫn `docs/` dưới đây tính từ gốc bộ. Khi cài bộ vào root, hai gốc trùng nhau.
+
+Dùng [bản đồ nguồn](../../docs/studentmart/source-map.md) để chọn đúng trang wiki và đọc [quy tắc nghiệp vụ](../../docs/studentmart/business-rules.md) liên quan. Wiki là căn cứ sản phẩm; các thiết kế và tiến độ CMS kế thừa không áp dụng.
+
+Chọn vai trò theo nhiệm vụ; không tự sinh agent con hoặc bắt buộc đi qua cả đội. Phần chưa chốt phải ghi là đề xuất; không bịa lệnh, mã nguồn, trạng thái GitHub hoặc kết quả kiểm thử.
+
+## Nền tảng
+
+Giao diện chính là mobile React Native + Expo. Kiểm tra `mobile/package.json`, lockfile, theme/components, navigation và contract API trước khi code; không áp đặt Expo Router, UI kit, state/form library hoặc phiên bản chưa có.
+
+Feature dự kiến ở `mobile/src/features/{auth,listings,chat,notifications,profile,moderation}/`. Nếu chọn Expo Router thì màn hình điều hướng có thể ở `mobile/src/app/`. Cấu trúc chưa tồn tại không phải lý do tạo toàn bộ khung khi chỉ được giao một spec.
+
+Khi thiết kế UI, dùng skill `frontend-design` nếu có; không yêu cầu skill ngoài bộ.
+
+## Hành vi cần triển khai
+
+- US01: đăng ký/đăng nhập/đăng xuất và bảo vệ dữ liệu riêng khi hết phiên hoặc đổi tài khoản. Verify không là điều kiện đăng/chat.
+- US02–US04: form theo loại tin; Bán/Trao đổi cần ảnh, Tìm mua tùy chọn ảnh/ngân sách. Chọn khu vực thủ công, chọn ảnh sẵn nếu không dùng camera.
+- US05: từ khóa + filter loại/danh mục/khu vực/giá; rỗng khác lỗi tải. Thiếu giá không thành 0/miễn phí; không để response tìm cũ ghi đè kết quả mới.
+- US06/US08: chi tiết, trạng thái, hồ sơ và nhãn verify có giới hạn; xác nhận đóng/gỡ/hoàn tất, chỉ báo thành công sau server xác nhận.
+- US07: mở/lấy đúng hội thoại theo tin, không tự chat; hiển thị tin gốc/trạng thái; tách đang gửi/đã gửi/lỗi. Tin kết thúc không tự khóa chat cũ còn quyền.
+- US09: verify có thể bỏ qua; giải thích nhãn chỉ xác nhận truy cập email; lỗi OTP/miền/cooldown rõ, không công khai email.
+- US10–US11: report/block riêng, không tuyên bố vi phạm chỉ vì tiếp nhận báo cáo; giao diện admin chỉ mức tối thiểu và trong phạm vi được giao.
+- US12: lưu/khôi phục/xóa nháp trên thiết bị, giữ nội dung/ảnh tải lỗi, retry cùng lần gửi không trùng theo API; không đồng bộ offline nhiều thiết bị.
+- US13: hỏi quyền push đúng ngữ cảnh, từ chối vẫn có inbox/unread/chat; mở thông báo sau kiểm tra phiên/quyền, cả khi app đóng hoặc thông báo cũ; không thoáng lộ hội thoại khác tài khoản.
+- Logout/switch dọn cache/dữ liệu riêng, xử lý nháp theo tài khoản và cập nhật thiết bị push; đang mở đúng hội thoại tránh thông báo trùng.
+
+## Chất lượng mobile và bàn giao
+
+Theo theme hiện có, tiếng Việt rõ; kiểm tra safe area, bàn phím, scroll, text lớn, screen reader, contrast và touch. Hiển thị quyền/lỗi/trạng thái bằng nhãn rõ, không chỉ màu. Backend quyết định quyền cuối cùng; không coi ẩn nút là bảo mật.
+
+Dùng [flow-acceptance.md](../../docs/studentmart/flow-acceptance.md) cho các nhánh liên quan. Chạy scripts có thật; kiểm tra push/background/resume trên thiết bị mục tiêu, ghi đúng điều kiện và phần chưa thử. Nêu file/màn hình, mã truy vết, hành vi và kết quả kiểm chứng; không suy ra hỗ trợ đủ iOS/Android từ cross-platform.

@@ -1,5 +1,47 @@
 # StudentMart
 
+## Local development
+
+The starter uses **React Native + Expo (SDK 58)** in `mobile/` and **NestJS 11 + Fastify** in `backend/`, both with TypeScript. Use Node.js 22.13+ on the 22.x line, 24.3+ on the 24.x line, or 26+, with pnpm 10.34.3. The root pnpm workspace manages both applications with one `pnpm-lock.yaml`.
+
+```sh
+pnpm run setup
+pnpm --filter studentmart-backend db:init
+pnpm run dev
+```
+
+On Windows PowerShell, use `pnpm.cmd` if script execution policy blocks `pnpm`.
+
+### PowerShell scripts
+
+```powershell
+.\scripts\run.ps1               # Chạy đồng thời Expo và NestJS
+.\scripts\run.ps1 --frontend    # Chỉ chạy Expo
+.\scripts\run.ps1 --backend     # Chỉ chạy NestJS
+.\scripts\add.ps1 AddAccountBio # Sinh migration từ thay đổi entity; chưa apply
+.\scripts\up.ps1                # Tạo database nếu thiếu và apply migration đang chờ
+.\scripts\check.ps1             # Kiểm tra kết nối, bảng, migration và schema
+```
+
+Các script tự xác định repository root nên có thể gọi từ thư mục khác. `add.ps1` mặc định dùng tên `SchemaChange` khi không truyền tên; hãy review SQL trước khi chạy `up.ps1`. TypeORM trả exit code 1 nếu không có thay đổi để sinh migration. `check.ps1` chỉ đọc database, trả code 1 khi không kết nối được, còn migration chờ hoặc schema lệch entity. `run.ps1` dùng Ctrl+C để dừng server. Nếu execution policy chặn `.ps1`, chạy bằng `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run.ps1` (thay tên script tương ứng); không cần thay đổi policy toàn máy.
+
+`pnpm run dev` starts the API on port 3000 and Expo on port 8081. Scan the QR code with an Expo Go version compatible with SDK 58 (see [Expo Go downloads](https://expo.dev/go)), or use an emulator/development build. iOS Simulator requires macOS; physical iPhones can connect to Expo from Windows.
+
+For a physical phone, copy `mobile/.env.example` to `mobile/.env` and set `EXPO_PUBLIC_API_URL=http://<computer-LAN-IP>:3000`. Keep the phone and computer on the same Wi-Fi and allow port 3000 through the local firewall. Restart Expo after changing the environment. Android Emulator uses `http://10.0.2.2:3000`; iOS Simulator uses `http://localhost:3000`.
+
+Before initialization, copy `backend/.env.example` to `backend/.env` and configure `DATABASE_URL` for PostgreSQL database `student-mart`. `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. The mobile starter has a button to verify the connection.
+
+```sh
+pnpm run dev:backend  # API only, with reload
+pnpm run dev:mobile   # Expo only
+pnpm run typecheck
+pnpm test
+pnpm run build       # Compile backend
+pnpm --filter studentmart-backend start
+```
+
+The backend includes PostgreSQL integration, the initial Account entity/migration, and account creation business logic. Registration/login HTTP endpoints and the remaining product features are pending. See [mobile setup](mobile/README.md) and [backend setup](backend/README.md).
+
 **Ứng dụng kết nối sinh viên mua, bán và trao đổi đồ cũ trong Làng Đại học ĐHQG TP.HCM.**
 
 StudentMart là nền tảng trung gian **C2C**, giúp người dùng đăng tin, tìm lựa chọn phù hợp và liên hệ trực tiếp với nhau. Hai bên tự thỏa thuận, gặp mặt, kiểm tra hàng và thanh toán hoặc trao đổi ngoài ứng dụng.
@@ -81,7 +123,7 @@ Chi tiết phạm vi và căn cứ ưu tiên nằm trong [MVP Scope](https://git
 | Thành phần | Công nghệ | Vai trò |
 |---|---|---|
 | Ứng dụng mobile | **React Native + Expo** | Giao diện, camera/chọn ảnh, bản nháp cục bộ và tích hợp thông báo. |
-| Backend | **Node.js** | API, xác thực tài khoản, phân quyền, tin đăng, chat và xử lý sự kiện thông báo. |
+| Backend | **NestJS 11 + Fastify (Node.js)** | API, xác thực tài khoản, phân quyền, tin đăng, chat và xử lý sự kiện thông báo. |
 | Cơ sở dữ liệu | **PostgreSQL** | Lưu dữ liệu tài khoản, tin đăng, hội thoại và dữ liệu nghiệp vụ. |
 | Quản lý mã nguồn | **GitHub** | Repository, branch, Pull Request và review. |
 | Tài liệu | **GitHub Wiki** | Nghiên cứu, yêu cầu, quyết định sản phẩm và truy vết. |
@@ -89,11 +131,11 @@ Chi tiết phạm vi và căn cứ ưu tiên nằm trong [MVP Scope](https://git
 
 Ứng dụng được định hướng phát triển cross-platform. Phạm vi hệ điều hành phát hành sẽ được xác định theo thiết bị kiểm thử và khả năng triển khai.
 
-Framework backend, ORM, dịch vụ lưu ảnh, gửi email và phương án tích hợp push sẽ được chốt trong bước thiết kế kỹ thuật. README sẽ bổ sung phiên bản công nghệ, cấu hình và lệnh chạy khi có mã nguồn tương ứng.
+Framework backend đã chọn NestJS với Fastify adapter và TypeORM cho PostgreSQL. Dịch vụ lưu ảnh, gửi email và phương án tích hợp push sẽ được chốt trong bước thiết kế kỹ thuật.
 
 ## Trạng thái dự án
 
-Dự án đang ở giai đoạn nghiên cứu sản phẩm và chuẩn bị thiết kế MVP; chưa bắt đầu triển khai ứng dụng theo kế hoạch hiện tại.
+Dự án đã có nền tảng chạy cục bộ cho Expo mobile và NestJS backend; các chức năng MVP chưa được triển khai.
 
 Khảo sát V1 ghi nhận **13 phản hồi sàng lọc và 11 người tiếp tục trả lời**. Đây là dữ liệu tự báo cáo trong mẫu nhỏ, chưa xác nhận hành vi sử dụng StudentMart.
 
@@ -105,76 +147,52 @@ Khảo sát V1 ghi nhận **13 phản hồi sàng lọc và 11 người tiếp t
 
 Trạng thái và người phụ trách từng công việc được theo dõi trên [GitHub Project](https://github.com/orgs/L02-VibeCode/projects/1). Danh sách tính năng trong README là phạm vi dự kiến, không phải xác nhận đã triển khai.
 
-## Cấu trúc repository dự kiến
+## Kiến trúc và cấu trúc repository
 
-StudentMart quản lý ứng dụng mobile và backend trong cùng repository. Mỗi phần có cấu hình và thư viện riêng; mã nguồn được tổ chức theo chức năng để thuận tiện phân công và bảo trì.
+StudentMart dùng **Three-Layer Architecture**, nhóm mã theo chức năng. Mobile áp dụng **MVVM nhẹ** bằng Screen và hook ViewModel; backend áp dụng **Controller → Service → Repository**.
+
+Đã tạo khung thư mục `mobile/` và `backend/` với ba tầng cho từng feature/module, manifest và ứng dụng khởi động được. Backend có entity Account và migration khởi tạo; các thư mục nghiệp vụ chưa triển khai dùng `.gitkeep`.
 
 ```text
 StudentMart/
-├── mobile/                         # React Native + Expo
+├── mobile/
+│   ├── README.md
+│   ├── assets/
 │   ├── src/
-│   │   ├── app/                    # Màn hình và điều hướng nếu dùng Expo Router
-│   │   ├── features/
-│   │   │   ├── auth/               # Đăng nhập, đăng ký và xác thực email
-│   │   │   ├── listings/           # Đăng, tìm kiếm và quản lý tin
-│   │   │   ├── chat/               # Hội thoại và hộp thư
-│   │   │   ├── notifications/      # Quyền thông báo và xử lý push
-│   │   │   ├── profile/            # Hồ sơ người dùng
-│   │   │   └── moderation/         # Báo cáo, chặn và quản trị tối thiểu
-│   │   ├── components/             # Thành phần giao diện dùng chung
-│   │   ├── services/               # API client và lưu trữ cục bộ
-│   │   ├── theme/                  # Màu sắc, typography và spacing
-│   │   └── config/                 # Cấu hình ứng dụng
-│   ├── assets/                     # Ảnh, font và tài nguyên tĩnh
-│   ├── app.config.ts
-│   ├── .env.example
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── backend/                        # Node.js
+│   │   ├── features/              # 6 feature; mỗi feature có presentation/business/data
+│   │   ├── business/workflows/    # Phối hợp phiên tài khoản và thông báo
+│   │   ├── shared/                # UI, theme, HTTP, storage, media, catalog, config
+│   │   ├── bootstrap/
+│   │   └── navigation/
+│   └── tests/                     # Unit và integration phía mobile
+├── backend/
+│   ├── README.md
 │   ├── src/
-│   │   ├── modules/
-│   │   │   ├── auth/               # Xác thực tài khoản và email trường
-│   │   │   ├── users/              # Hồ sơ người dùng
-│   │   │   ├── listings/           # Tin đăng, tìm kiếm và khu vực
-│   │   │   ├── chat/               # Hội thoại và tin nhắn
-│   │   │   ├── notifications/      # Thiết bị nhận thông báo và gửi push
-│   │   │   └── moderation/         # Báo cáo, chặn và xử lý vi phạm
-│   │   ├── services/               # Kết nối PostgreSQL, email và lưu ảnh
-│   │   ├── common/                 # Xử lý lỗi và tiện ích dùng chung
-│   │   ├── config/                 # Cấu hình môi trường
-│   │   ├── app.ts                  # Khởi tạo ứng dụng
-│   │   └── main.ts                 # Khởi chạy server
-│   ├── database/
-│   │   ├── migrations/             # Lịch sử thay đổi cấu trúc dữ liệu
-│   │   └── seeds/                  # Dữ liệu phát triển và kiểm thử
-│   ├── tests/                      # Kiểm thử API và tích hợp
-│   ├── .env.example
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── docs/                           # Thiết lập môi trường, API và thiết kế dữ liệu
-├── scripts/                        # Script hỗ trợ khi cần
-├── .github/
-│   ├── workflows/                  # Kiểm tra tự động
-│   └── pull_request_template.md
-├── .gitignore
+│   │   ├── modules/               # 9 module; mỗi module có presentation/business/data
+│   │   ├── business/workflows/    # Use case và transaction liên module
+│   │   ├── shared/                # HTTP, DB, provider, config, logging
+│   │   ├── bootstrap/
+│   │   └── workers/
+│   ├── database/                  # Migrations, seeds và reference-data
+│   └── tests/                     # Unit, integration và support
+├── docs/
+│   ├── schema.md
+│   └── solution_tree.md
+├── StudentMart.wiki/
+├── stephen-skills/
 └── README.md
 ```
 
+Xem [solution tree và lựa chọn kiến trúc](docs/solution_tree.md), [schema/ERD](docs/schema.md), [hướng dẫn mobile](mobile/README.md) và [hướng dẫn backend](backend/README.md).
+
 ### Nguyên tắc tổ chức
 
-- `mobile/` và `backend/` được cài đặt, chạy và quản lý thư viện riêng. Mỗi phần có một lockfile được commit.
-- Màn hình điều hướng kết nối tới mã nguồn trong `features/`; các chức năng liên quan được đặt cùng nhau.
-- Backend triển khai dưới dạng một ứng dụng thống nhất. Mỗi module chứa phần tiếp nhận yêu cầu, kiểm tra dữ liệu và xử lý nghiệp vụ tương ứng.
-- Chỉ tách mã dùng chung khi có nhu cầu thực tế; không tạo sẵn nhiều lớp hoặc thư mục rỗng.
-- Kiểm tra quyền được thực hiện tại backend; việc ẩn nút hoặc màn hình trên mobile không thay thế phân quyền.
-- Unit test có thể đặt gần mã nguồn; kiểm thử tích hợp backend đặt trong `backend/tests/`.
-- GitHub Wiki lưu tài liệu sản phẩm và nghiên cứu. `docs/` lưu tài liệu kỹ thuật gắn với mã nguồn.
-- Không commit `.env`, khóa dịch vụ, dữ liệu cá nhân, `node_modules/` hoặc bản build. `.env.example` chỉ chứa cấu hình minh họa.
-- Cấu trúc chi tiết được điều chỉnh theo framework backend và công cụ migration được lựa chọn. TypeScript là phương án dự kiến cho cả hai phần.
-
-Cấu trúc sẽ được cập nhật khi khởi tạo mã nguồn. Tài liệu sản phẩm chính được quản lý trên [GitHub Wiki](https://github.com/L02-VibeCode/StudentMart/wiki).
+- `presentation/` xử lý giao diện/HTTP; `business/` xử lý state/action client hoặc nghiệp vụ server theo trách nhiệm; `data/` xử lý API, storage hoặc PostgreSQL.
+- Với mobile: Screen → ViewModel → Business Service → Repository. Với backend: Controller → Service/Workflow → Repository.
+- Một backend chia module, không cần microservices. Quyền sở hữu/thành viên/admin và transaction vẫn kiểm tra tại backend.
+- Mỗi ứng dụng có manifest riêng; pnpm workspace dùng chung `pnpm-lock.yaml` ở root. Các lệnh chạy nằm trong phần Local development.
+- Chỉ thêm use-case class, interface, mapper hoặc abstraction khi có nhu cầu; không bắt một file/lớp cho mỗi thao tác CRUD.
+- Wiki giữ yêu cầu và nghiên cứu; docs giữ thiết kế kỹ thuật. Không commit secret, dữ liệu nhận dạng, dependency hoặc build output.
 
 ## Quy trình cộng tác
 
