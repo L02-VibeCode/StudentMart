@@ -27,9 +27,9 @@ Các script tự xác định repository root nên có thể gọi từ thư m�
 
 `pnpm run dev` starts the API on port 3000 and Expo on port 8081. Scan the QR code with an Expo Go version compatible with SDK 58 (see [Expo Go downloads](https://expo.dev/go)), or use an emulator/development build. iOS Simulator requires macOS; physical iPhones can connect to Expo from Windows.
 
-For a physical phone, copy `mobile/.env.example` to `mobile/.env` and set `EXPO_PUBLIC_API_URL=http://<computer-LAN-IP>:3000`. Keep the phone and computer on the same Wi-Fi and allow port 3000 through the local firewall. Restart Expo after changing the environment. Android Emulator uses `http://10.0.2.2:3000`; iOS Simulator uses `http://localhost:3000`.
+For a physical phone in LAN development, the app uses Metro's host on port 3000 automatically when `EXPO_PUBLIC_API_URL` is unset or blank. For a separate API host/port or a release build, set this variable in `mobile/.env` to the API origin (e.g. `http://<computer-LAN-IP>:3000` for local testing). Keep the phone and computer on the same network and allow port 3000 through the local firewall. Restart Expo after changing the environment. Android Emulator uses `http://10.0.2.2:3000`; iOS Simulator uses `http://localhost:3000`. See [phone troubleshooting](mobile/README.md#kiểm-tra-điện-thoại-sau-khi-quét-qr).
 
-Before initialization, copy `backend/.env.example` to `backend/.env` and configure `DATABASE_URL` for PostgreSQL database `student-mart`. `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. The mobile starter has a button to verify the connection.
+Before initialization, copy `backend/.env.example` to `backend/.env` and configure `DATABASE_URL` for PostgreSQL database `student-mart`. `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. Mobile now opens the registration form; its development connection panel can check backend health.
 
 ```sh
 pnpm run dev:backend  # API only, with reload

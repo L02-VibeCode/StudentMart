@@ -15,7 +15,7 @@
     "ios": "pnpm --filter studentmart-mobile run ios",
     "build": "pnpm --filter studentmart-backend run build",
     "typecheck": "pnpm -r run typecheck",
-    "test": "pnpm run test:contracts && pnpm --filter studentmart-backend test",
+    "test": "pnpm run test:contracts && pnpm --filter studentmart-backend test && pnpm --filter studentmart-mobile test",
     "test:contracts": "node --test tests/contracts/*.test.cjs"
   },
   "devDependencies": {
