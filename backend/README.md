@@ -22,7 +22,17 @@ Copy `.env.example` thành `.env` nếu muốn thay đổi cấu hình. Mặc đ
 
 `DATABASE_URL` được đọc từ `backend/.env` khi khởi động và được kiểm tra trong `loadConfig()`. Tên database là `student-mart`; định dạng: `postgresql://USER:PASSWORD@HOST:5432/student-mart`. Các ký tự đặc biệt trong username/password cần URL-encode. Biến môi trường của process được ưu tiên hơn file `.env`. File `.env` và file nguồn credentials cục bộ `env-varibale.md` được Git ignore; `.env.example` chỉ chứa giá trị mẫu. Khi chạy backend, `DATABASE_URL` là bắt buộc và NestJS mở connection pool qua TypeORM.
 
-`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Unit test kiểm tra HTTP bằng Fastify injection và tắt kết nối database một cách tường minh. Account là entity đầu tiên; chưa có API đăng ký/đăng nhập.
+`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Unit test kiểm tra HTTP bằng Fastify injection và tắt kết nối database một cách tường minh. API đăng ký đã triển khai; đăng nhập và phiên thuộc ticket tiếp theo.
+
+## API đăng ký — #87
+
+`POST /api/v1/auth/register` nhận JSON chỉ gồm `email`, `password`, `displayName`; xem [OpenAPI](../docs/contracts/accounts.openapi.yaml). Email được trim/lowercase, tên được trim, mật khẩu giữ nguyên. Giới hạn lần lượt là 254, 8–128 và 1–100 Unicode code point. Field ngoài whitelist (kể cả role/verify) trả `400 VALIDATION_ERROR`.
+
+Thành công trả `201 {account: ...}`, role `MEMBER`, trạng thái trường `UNVERIFIED`, các field hồ sơ chưa khai báo là `null`; không cấp phiên. DTO liệt kê rõ từng field và không chứa password/hash. Email trùng sau normalize trả `409 EMAIL_ALREADY_EXISTS`, kể cả hai request đồng thời. PostgreSQL enforce cả unique và CHECK email đã normalize.
+
+Response dùng `Cache-Control: no-store`, `X-Request-Id` do server tạo; lỗi có envelope `{error:{code,message,fields?,requestId}}` và không trả lỗi SQL/stack/input. Request JSON tối đa 16 KiB (`413` nếu vượt); content type không hỗ trợ trả `415`. Giới hạn đăng ký là 5 lần thử/15 phút/IP, tính cả request sai, vượt trả `429` cùng `Retry-After`. Bộ đếm hiện nằm trong memory của một process, tối đa 10.000 IP đang lưu; đầy trả `503`. Restart sẽ reset bộ đếm; cần store dùng chung trước khi chạy nhiều replica. Không bật trust proxy nên `X-Forwarded-For` không thay đổi IP được tính; khi thêm reverse proxy cần cấu hình trust theo hạ tầng thực tế.
+
+Xem [bằng chứng triển khai và kiểm tra #87](../docs/implementation/task-16-02-be-register.md).
 
 ## Account và migration code first
 
@@ -44,7 +54,7 @@ Sau khi sửa entity, chạy `pnpm run migration:generate src/shared/database/mi
 
 Migration nằm ở `src/shared/database/migrations/`; lịch sử nằm trong bảng `typeorm_migrations`. Yêu cầu PostgreSQL 13+ cho `gen_random_uuid()`. Lệnh tạo database dùng database bảo trì `postgres`, cần quyền CREATEDB nếu `student-mart` chưa tồn tại. Khi database đã được cấp sẵn, chỉ cần `migration:run` và quyền DDL trong schema `public`.
 
-Integration test yêu cầu database đã migrate, kiểm tra lưu Account, UUID/timestamps, email unique, ẩn hash và schema khớp entity. Mọi dữ liệu test được đặt trong transaction và rollback; test không tự chạy migration.
+Integration test yêu cầu database đã migrate, kiểm tra lưu Account, UUID/timestamps, email unique, ẩn hash và schema khớp entity. Test service dùng transaction/rollback. Test HTTP đồng thời dùng connection riêng và cleanup đúng email UUID do test tạo; không reset dữ liệu khác hoặc tự chạy migration.
 
 ## Đặt code ở đâu?
 

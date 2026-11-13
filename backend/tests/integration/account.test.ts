@@ -5,6 +5,7 @@ import { DataSource } from "typeorm";
 import { expect, it } from "vitest";
 import { Account, AccountRole } from "../../src/modules/accounts/business/account.entity";
 import { AccountsService } from "../../src/modules/accounts/business/accounts.service";
+import { EmailAlreadyExistsError } from "../../src/modules/accounts/business/registration-errors";
 import { loadConfig } from "../../src/shared/config/env";
 import { databaseOptions } from "../../src/shared/database/database-options";
 
@@ -35,7 +36,7 @@ it("persists Account fields, hides hashes, enforces unique email, and matches th
       .addSelect("account.passwordHash").where("account.id = :id", { id: saved.id }).getOneOrFail();
     expect(withHash.passwordHash).toMatch(/^scrypt\$/);
     await expect(service.create({ email, password: "other-password", displayName: "Duplicate" }))
-      .rejects.toMatchObject({ driverError: { code: "23505" } });
+      .rejects.toBeInstanceOf(EmailAlreadyExistsError);
   } finally {
     if (runner.isTransactionActive) await runner.rollbackTransaction();
     await runner.release();
