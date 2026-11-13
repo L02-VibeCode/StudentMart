@@ -1,50 +1,20 @@
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { API_URL } from "./src/shared/config/env";
-import { checkBackendHealth } from "./src/shared/data/api";
+import { createRegistrationApi } from "./src/features/auth/data/registration-api";
+import { RegisterScreen } from "./src/features/auth/presentation/register-screen";
+import { LoginScreen } from "./src/features/auth/presentation/login-screen";
+
+const register = createRegistrationApi(API_URL);
+type Route = { name: "register" } | { name: "login"; email: string; created: boolean };
 
 export default function App() {
-  const [status, setStatus] = useState("Ready to connect");
-  const [checking, setChecking] = useState(false);
-
-  async function checkConnection() {
-    setChecking(true);
-    setStatus("Connecting...");
-    try {
-      await checkBackendHealth();
-      setStatus("Backend connected");
-    } catch {
-      setStatus("Cannot reach backend. Check the API URL and network connection.");
-    } finally {
-      setChecking(false);
-    }
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>StudentMart</Text>
-      <Text style={styles.subtitle}>React Native + Expo</Text>
-      <Text style={styles.subtitle}>{API_URL}</Text>
-      <Text style={styles.subtitle} accessibilityLiveRegion="polite">{status}</Text>
-      <Button title={checking ? "Checking..." : "Check backend connection"} disabled={checking} onPress={checkConnection} />
-      <StatusBar style="auto" />
-    </View>
-  );
+  const [route, setRoute] = useState<Route>({ name: "register" });
+  return <SafeAreaProvider>
+    <StatusBar style="dark" />
+    {route.name === "register"
+      ? <RegisterScreen register={register} onRegistered={email => setRoute({ name: "login", email, created: true })} onLogin={() => setRoute({ name: "login", email: "", created: false })} />
+      : <LoginScreen email={route.email} created={route.created} onRegister={() => setRoute({ name: "register" })} />}
+  </SafeAreaProvider>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-  },
-  subtitle: {
-    marginTop: 8,
-  },
-});

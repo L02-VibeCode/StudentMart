@@ -1,6 +1,10 @@
 import { Platform } from "react-native";
+import Constants from "expo-constants";
+import { resolveApiOrigin } from "./api-origin";
 
-export const API_URL = (
-  process.env.EXPO_PUBLIC_API_URL ??
-  (Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000")
-).replace(/\/+$/, "");
+export const API_URL = resolveApiOrigin({
+  configuredUrl: process.env.EXPO_PUBLIC_API_URL,
+  metroHost: Constants.expoConfig?.hostUri,
+  platform: Platform.OS,
+  development: __DEV__,
+});
