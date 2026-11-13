@@ -1,6 +1,6 @@
 # Nghiệm thu TASK-16.02 — #86, #87, #88
 
-Đối chiếu nội dung GitHub của ba issue với code trên nhánh `feat/task-16-02-be-register`, ngày 2026-11-13. Cả ba issue đang OPEN; tài liệu này ghi bằng chứng triển khai cục bộ, không tự coi là đã merge hoặc nghiệm thu trên điện thoại.
+Đối chiếu nội dung GitHub của ba issue với code trên nhánh `feat/task-16-02-be-register`, ngày 2026-11-13. Tại thời điểm đối chiếu, cả ba issue đang OPEN. Tài liệu ghi bằng chứng triển khai cục bộ và xác nhận trên thiết bị do người dùng cung cấp; không tự coi là đã merge.
 
 ## Phát hiện trước khi sửa
 
@@ -21,11 +21,15 @@
 | Lỗi email/field/network và giữ form | Mapping 400/409/429/5xx, timeout 15 giây; giữ input khi lỗi, không tự retry POST, không điều hướng khi lỗi | PASS automated |
 | Chỉ chuyển sau thành công server | Client yêu cầu 201 và dữ liệu MEMBER/UNVERIFIED; reset password, chuyển màn hình đăng nhập với email prefill | Model/API PASS; cần kiểm tra điều hướng UI trên thiết bị |
 | Không tự cấp phiên/verify | Không lưu credential; không gửi confirm/role/verify; đăng ký không đăng nhập | PASS |
-| Tích hợp FE client ↔ HTTP ↔ PostgreSQL | `backend/tests/integration/mobile-registration.test.ts`, request thật trên cổng local tạm, email UUID + cleanup | PASS; đây chưa phải thao tác UI trên điện thoại |
+| Tích hợp FE client ↔ HTTP ↔ PostgreSQL | Integration tự động dùng HTTP thật + PostgreSQL; người dùng xác nhận tạo tài khoản thành công trên điện thoại qua Expo | PASS automated và luồng thành công trên điện thoại theo xác nhận người dùng |
 | API docs khớp | Swagger chỉ có health/register; schema đăng ký từ hợp đồng OpenAPI, unit docs + API integration | PASS |
-| Safe area, bàn phím, font scaling và QR trên điện thoại | Màn hình dùng SafeAreaView, KeyboardAvoidingView, ScrollView; Android/iOS export thành công | Chưa có kiểm thử trực tiếp trên điện thoại trong phiên này |
+| Safe area, bàn phím, font scaling và QR trên điện thoại | Android/iOS export thành công; người dùng đã kết nối Expo, thấy màn hình đăng ký và tạo tài khoản | QR/hiển thị/đăng ký thành công đã xác nhận; chi tiết keyboard/font scaling/safe area chưa xác nhận |
 
-Kết luận: phần BE #87 đã có implementation và bằng chứng tự động. Phần FE #88 đã được bổ sung trong thay đổi này. Chưa đánh dấu #86/#88 Done cho đến khi kiểm tra UI/keyboard và thao tác đăng ký trên thiết bị thật hoặc simulator. Đăng nhập API/session nằm ngoài #86, thuộc TASK-16.03; màn hình đăng nhập hiện là đích điều hướng có thông báo tính năng chưa sẵn sàng.
+Kết luận: phần BE #87 đã có implementation và bằng chứng tự động. Phần FE #88 đã được bổ sung và người dùng đã xác nhận luồng đăng ký thành công trên điện thoại. Các trường hợp lỗi/submit lặp trên UI, điều hướng sau thành công và chi tiết bàn phím/bố cục vẫn cần xác nhận riêng trước khi chốt nghiệm thu #86/#88. Đăng nhập API/session nằm ngoài #86, thuộc TASK-16.03; màn hình đăng nhập hiện là đích điều hướng có thông báo tính năng chưa sẵn sàng.
+
+## Xác nhận trên điện thoại từ người dùng — 2026-11-13
+
+Người dùng xác nhận: kết nối được Expo trên điện thoại, đã thấy màn hình đăng ký và tạo tài khoản thành công. Đây là bằng chứng thủ công từ người dùng, không phải thao tác thiết bị do agent thực hiện. Chưa cung cấp hệ điều hành/model máy hoặc xác nhận riêng các ca email trùng, dữ liệu sai, mất mạng, submit lặp và điều hướng sau thành công. Không ghi email hoặc mật khẩu tài khoản thử vào tài liệu.
 
 ## Kết nối Expo trên điện thoại
 
