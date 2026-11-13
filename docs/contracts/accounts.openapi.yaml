@@ -1,0 +1,575 @@
+openapi: 3.0.3
+info:
+  title: StudentMart Account API Contract
+  version: 1.0.0
+  description: >-
+    Baseline TASK-16.01 (#83), R01/R06, US01/US06. This specification defines
+    future implementation tickets; these endpoints are not implemented by #83.
+    Normative lifecycle, validation and migration decisions: account-model.md.
+    Mobile integration: account-mobile.md. School verification is optional.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development; physical devices use the computer LAN IP.
+tags:
+  - name: Auth
+    description: Email/password registration and opaque bearer sessions.
+  - name: Accounts
+    description: Private self profile, public profile and avatar.
+  - name: Catalog
+    description: Approved TASK-15 school and area lookup data.
+security:
+  - bearerSession: []
+paths:
+  /auth/register:
+    post:
+      operationId: registerAccount
+      tags: [Auth]
+      summary: Register a MEMBER without school verification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/PrivateAccount'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: EMAIL_ALREADY_EXISTS; normalized email is already registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/ServerError'
+  /auth/login:
+    post:
+      operationId: loginAccount
+      tags: [Auth]
+      summary: Authenticate and create a 30-day server-side session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Token is returned once; never log or cache this response.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: INVALID_CREDENTIALS; same response for unknown email and wrong password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/ServerError'
+  /auth/logout:
+    post:
+      operationId: logoutAccount
+      tags: [Auth]
+      summary: Revoke the presented session; valid-format invalid tokens also return 204
+      description: >-
+        A missing or malformed Bearer header returns 401. A correctly formatted
+        token is revoked if active; unknown, expired and already-revoked tokens
+        return 204. No current-user guard that rejects revoked tokens on this operation.
+      responses:
+        '204':
+          description: No response body. Current token cannot authorize subsequent private requests.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/ServerError'
+  /accounts/me:
+    get:
+      operationId: getMyAccount
+      tags: [Accounts]
+      summary: Resolve current private profile from the verified session
+      responses:
+        '200':
+          $ref: '#/components/responses/PrivateAccount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        default:
+          $ref: '#/components/responses/ServerError'
+    patch:
+      operationId: updateMyAccount
+      tags: [Accounts]
+      summary: Update only the authenticated account's whitelisted profile fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/PrivateAccount'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        default:
+          $ref: '#/components/responses/ServerError'
+  /accounts/me/avatar:
+    put:
+      operationId: updateMyAvatar
+      tags: [Accounts]
+      summary: Replace avatar after the complete upload has been validated and stored
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: >-
+                    One image, at most 5242880 bytes (5 MiB). JPEG, PNG or WebP
+                    only; validate file signature and decoded content, not just extension/MIME.
+      responses:
+        '200':
+          $ref: '#/components/responses/PrivateAccount'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: PAYLOAD_TOO_LARGE; exceeds the 5 MiB file limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '415':
+          description: UNSUPPORTED_MEDIA_TYPE; not a supported decoded image.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      operationId: deleteMyAvatar
+      tags: [Accounts]
+      summary: Clear own avatar; repeat deletion is safe
+      responses:
+        '204':
+          description: No body. Subsequent profiles contain avatarUrl null. Account remains intact.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        default:
+          $ref: '#/components/responses/ServerError'
+  /accounts/{accountId}:
+    get:
+      operationId: getPublicAccount
+      tags: [Accounts]
+      summary: Read public owner profile as guest or member
+      security: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Public projection only; no email, role, area or private verification timestamp.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [account]
+                properties:
+                  account:
+                    $ref: '#/components/schemas/PublicAccount'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: NOT_FOUND for nonexistent or non-public accounts; same response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          $ref: '#/components/responses/ServerError'
+  /catalog/schools:
+    get:
+      operationId: listSchools
+      tags: [Catalog]
+      summary: Approved declared-school choices from TASK-15
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/responses/LookupList'
+        default:
+          $ref: '#/components/responses/ServerError'
+  /catalog/areas:
+    get:
+      operationId: listAreas
+      tags: [Catalog]
+      summary: Approved manually selected areas from TASK-15; no GPS required
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/responses/LookupList'
+        default:
+          $ref: '#/components/responses/ServerError'
+components:
+  securitySchemes:
+    bearerSession:
+      type: http
+      scheme: bearer
+      bearerFormat: Opaque session token, 32 random bytes encoded as 43 base64url characters
+      description: >-
+        Authorization: Bearer TOKEN. Server stores SHA-256 digest only.
+        A JWT, cookie, refresh token or client-provided accountId is not used.
+  headers:
+    NoStore:
+      description: Required for private profiles, login and registration responses.
+      schema:
+        type: string
+        enum: [no-store]
+  responses:
+    PrivateAccount:
+      description: Private projection for the current account; no credential/session hashes.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AccountResponse'
+    ValidationError:
+      description: VALIDATION_ERROR; includes invalid/unknown fields, malformed JSON and unsupported lookup IDs.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unauthorized:
+      description: UNAUTHENTICATED for missing/malformed/unknown/revoked tokens; SESSION_EXPIRED for known expired sessions.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Forbidden:
+      description: FORBIDDEN; authenticated actor lacks the permission for this operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    RateLimited:
+      description: RATE_LIMITED; client must wait at least Retry-After seconds.
+      headers:
+        Retry-After:
+          description: Required non-negative delay in seconds.
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ServerError:
+      description: 503 SERVICE_UNAVAILABLE for unavailable storage/database; 500 INTERNAL_ERROR otherwise. No internal details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    LookupList:
+      description: Approved choices, ordered by name then id; no fabricated seed data.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [items]
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LookupItem'
+  schemas:
+    Email:
+      type: string
+      format: email
+      maxLength: 254
+      description: Trim and lowercase before server validation and uniqueness lookup. Login email is distinct from school verification email.
+      example: student@example.invalid
+    Password:
+      type: string
+      format: password
+      minLength: 8
+      maxLength: 128
+      writeOnly: true
+      description: Do not trim, lowercase or Unicode-normalize passwords. Never store plaintext.
+    DisplayName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      pattern: '\S'
+      description: Trim before length validation; no whitespace-only names.
+      example: Sinh viên
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password, displayName]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          $ref: '#/components/schemas/Password'
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          $ref: '#/components/schemas/Password'
+    UpdateProfileRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+        declaredSchoolId:
+          type: string
+          format: uuid
+          nullable: true
+        areaId:
+          type: string
+          format: uuid
+          nullable: true
+        bio:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Trim; empty string is persisted/returned as null. Omission leaves unchanged.
+    LookupItem:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+    NullableLookupSummary:
+      type: object
+      nullable: true
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+    PublicSchoolVerification:
+      type: object
+      additionalProperties: false
+      required: [status, school]
+      description: UNVERIFIED requires school null. VERIFIED requires verified school. No verified email is exposed.
+      oneOf:
+        - properties:
+            status:
+              enum: [UNVERIFIED]
+            school:
+              enum: [null]
+        - properties:
+            status:
+              enum: [VERIFIED]
+            school:
+              type: object
+      properties:
+        status:
+          type: string
+          enum: [UNVERIFIED, VERIFIED]
+        school:
+          $ref: '#/components/schemas/NullableLookupSummary'
+    PrivateSchoolVerification:
+      type: object
+      additionalProperties: false
+      required: [status, school, verifiedAt]
+      description: >-
+        UNVERIFIED requires school and verifiedAt null. VERIFIED requires both values.
+        Derive from TASK-18, never from declared school or login email domain.
+      oneOf:
+        - properties:
+            status:
+              enum: [UNVERIFIED]
+            school:
+              enum: [null]
+            verifiedAt:
+              enum: [null]
+        - properties:
+            status:
+              enum: [VERIFIED]
+            school:
+              type: object
+            verifiedAt:
+              type: string
+      properties:
+        status:
+          type: string
+          enum: [UNVERIFIED, VERIFIED]
+        school:
+          $ref: '#/components/schemas/NullableLookupSummary'
+        verifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+    PrivateAccount:
+      type: object
+      additionalProperties: false
+      required: [id, email, displayName, role, avatarUrl, declaredSchool, area, bio, schoolVerification, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          $ref: '#/components/schemas/Email'
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+        role:
+          type: string
+          enum: [MEMBER, ADMIN]
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        declaredSchool:
+          $ref: '#/components/schemas/NullableLookupSummary'
+        area:
+          $ref: '#/components/schemas/NullableLookupSummary'
+        bio:
+          type: string
+          maxLength: 500
+          nullable: true
+        schoolVerification:
+          $ref: '#/components/schemas/PrivateSchoolVerification'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PublicAccount:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, avatarUrl, declaredSchool, bio, schoolVerification]
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        declaredSchool:
+          $ref: '#/components/schemas/NullableLookupSummary'
+        bio:
+          type: string
+          maxLength: 500
+          nullable: true
+        schoolVerification:
+          $ref: '#/components/schemas/PublicSchoolVerification'
+    AccountResponse:
+      type: object
+      additionalProperties: false
+      required: [account]
+      properties:
+        account:
+          $ref: '#/components/schemas/PrivateAccount'
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required: [account, session]
+      properties:
+        account:
+          $ref: '#/components/schemas/PrivateAccount'
+        session:
+          type: object
+          additionalProperties: false
+          required: [token, expiresAt]
+          properties:
+            token:
+              type: string
+              pattern: '^[A-Za-z0-9_-]{43}$'
+              description: Exactly 32 cryptographically random bytes, base64url without padding; returned once.
+            expiresAt:
+              type: string
+              format: date-time
+              description: Absolute expiry 30 days after session creation, in UTC.
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, requestId]
+          properties:
+            code:
+              type: string
+              enum: [VALIDATION_ERROR, EMAIL_ALREADY_EXISTS, INVALID_CREDENTIALS, UNAUTHENTICATED, SESSION_EXPIRED, FORBIDDEN, NOT_FOUND, RATE_LIMITED, PAYLOAD_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, SERVICE_UNAVAILABLE, INTERNAL_ERROR]
+            message:
+              type: string
+              minLength: 1
+              description: Safe display fallback; clients branch on code, not this text.
+            requestId:
+              type: string
+              minLength: 1
+              maxLength: 128
+              description: Server-generated correlation ID; no personal data or credentials.
+            fields:
+              type: object
+              additionalProperties:
+                type: string
+              description: Optional field-name to safe error-message mapping for validation failures.

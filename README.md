@@ -42,6 +42,8 @@ pnpm --filter studentmart-backend start
 
 The backend includes PostgreSQL integration, the initial Account entity/migration, and account creation business logic. Registration/login HTTP endpoints and the remaining product features are pending. See [mobile setup](mobile/README.md) and [backend setup](backend/README.md).
 
+Baseline hợp đồng tài khoản TASK-16.01 (#83): [OpenAPI v1](docs/contracts/accounts.openapi.yaml), [mô hình tài khoản, phiên và migration dự kiến](docs/contracts/account-model.md), [hợp đồng tích hợp mobile](docs/contracts/account-mobile.md). Đây là đặc tả cho các ticket triển khai sau; endpoint chưa được triển khai bởi ticket hợp đồng. Dữ liệu lookup TASK-15 và provider avatar cần được xác nhận trước các phần phụ thuộc.
+
 **Ứng dụng kết nối sinh viên mua, bán và trao đổi đồ cũ trong Làng Đại học ĐHQG TP.HCM.**
 
 StudentMart là nền tảng trung gian **C2C**, giúp người dùng đăng tin, tìm lựa chọn phù hợp và liên hệ trực tiếp với nhau. Hai bên tự thỏa thuận, gặp mặt, kiểm tra hàng và thanh toán hoặc trao đổi ngoài ứng dụng.
