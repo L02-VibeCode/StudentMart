@@ -6,6 +6,7 @@ import type { Repository } from "typeorm";
 import { AccountsModule } from "../../src/modules/accounts/accounts.module";
 import { Account } from "../../src/modules/accounts/business/account.entity";
 import { configureHttp } from "../../src/shared/http/configure-http";
+import { configureApiDocs } from "../../src/shared/http/api-docs";
 
 export async function registrationApp(repository: Repository<Account>): Promise<NestFastifyApplication> {
   const module = await Test.createTestingModule({ imports: [AccountsModule] })
@@ -14,6 +15,7 @@ export async function registrationApp(repository: Repository<Account>): Promise<
     new FastifyAdapter({ requestIdHeader: false, bodyLimit: 16384 }), { logger: false },
   );
   configureHttp(app);
+  configureApiDocs(app);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;

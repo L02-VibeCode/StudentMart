@@ -24,6 +24,33 @@ Copy `.env.example` thành `.env` nếu muốn thay đổi cấu hình. Mặc đ
 
 `src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Unit test kiểm tra HTTP bằng Fastify injection và tắt kết nối database một cách tường minh. API đăng ký đã triển khai; đăng nhập và phiên thuộc ticket tiếp theo.
 
+## Swagger UI — tài liệu và thử API
+
+Backend dùng `@nestjs/swagger` 11.x để phục vụ Swagger UI, `@fastify/static` 10.x (khớp peer dependency của NestJS Fastify adapter hiện tại) để phục vụ JS/CSS ngay từ backend và `yaml` 2.9.1 để đọc hợp đồng OpenAPI. Cấu hình theo [hướng dẫn chính thức NestJS](https://docs.nestjs.com/openapi/introduction). Dependency nằm trong `backend/package.json`, lockfile chung ở root; không cần cài Swagger CLI hay tải UI từ CDN.
+
+Cài đặt và chạy từ repository root:
+
+```powershell
+pnpm install --frozen-lockfile
+# Cấu hình backend/.env theo .env.example nếu chưa có, đặc biệt DATABASE_URL.
+.\scripts\up.ps1
+.\scripts\run.ps1 --backend
+```
+
+Lệnh tương đương để chạy riêng API: `pnpm --filter studentmart-backend start:dev`. Nếu PowerShell chặn `pnpm.ps1`, dùng `pnpm.cmd`. Chạy bản build bằng `pnpm --filter studentmart-backend build` rồi `pnpm --filter studentmart-backend start`.
+
+- UI: **http://localhost:3000/api/docs**.
+- OpenAPI JSON: http://localhost:3000/api/docs/openapi.json (có thể import vào Postman/Insomnia).
+- OpenAPI YAML: http://localhost:3000/api/docs/openapi.yaml.
+
+Nếu đổi PORT, thay 3000 bằng port đã cấu hình. Từ máy khác cùng LAN, thay localhost bằng IP máy chạy backend. Server trong Swagger dùng `/` nên request gửi về đúng host/port đang mở UI.
+
+Trong Swagger, mở `GET /health` rồi **Try it out → Execute** để kiểm tra server. Với `POST /api/v1/auth/register`, sửa JSON request và bấm Execute; UI hiển thị curl, status code, headers và response body. Dùng email test mới cho mỗi lần đăng ký; API lưu Account thật trong database đang cấu hình. Thành công trả 201, email trùng trả 409, input sai trả 400, vượt 5 lần thử/15 phút/IP trả 429. Đăng ký không cần token và không cấp phiên đăng nhập.
+
+Swagger chỉ hiển thị route đã đăng ký trong NestJS. Schema/response đăng ký lấy từ `docs/contracts/accounts.openapi.yaml`; các API dự kiến như login/profile chưa xuất hiện. Khi thêm endpoint, đăng ký controller và bổ sung hợp đồng tương ứng. Thay file hợp đồng rồi restart dev server hoặc build lại. Build tự copy hợp đồng vào `backend/dist/shared/http/accounts.openapi.yaml` để bản build có thể chạy độc lập với thư mục docs nguồn. Không sửa trực tiếp file trong dist.
+
+Kiểm tra bằng `pnpm test`, `pnpm typecheck` và `pnpm --filter studentmart-backend build`. Ngày 2026-11-13: 54 contract test + 16 unit test PASS; smoke test HTTP của bản build kết nối PostgreSQL thật trả 200 cho UI, JS/CSS, JSON/YAML và health. OpenAPI chỉ liệt kê `/health` và `/api/v1/auth/register`.
+
 ## API đăng ký — #87
 
 `POST /api/v1/auth/register` nhận JSON chỉ gồm `email`, `password`, `displayName`; xem [OpenAPI](../docs/contracts/accounts.openapi.yaml). Email được trim/lowercase, tên được trim, mật khẩu giữ nguyên. Giới hạn lần lượt là 254, 8–128 và 1–100 Unicode code point. Field ngoài whitelist (kể cả role/verify) trả `400 VALIDATION_ERROR`.
