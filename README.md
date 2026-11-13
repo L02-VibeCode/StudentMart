@@ -2,20 +2,34 @@
 
 ## Local development
 
-The starter uses **React Native + Expo (SDK 54)** in `mobile/` and **NestJS 11 + Fastify** in `backend/`, both with TypeScript. Node.js 22.12+ and pnpm 10.34.3 are required. The root pnpm workspace manages both applications with one `pnpm-lock.yaml`.
+The starter uses **React Native + Expo (SDK 58)** in `mobile/` and **NestJS 11 + Fastify** in `backend/`, both with TypeScript. Use Node.js 22.13+ on the 22.x line, 24.3+ on the 24.x line, or 26+, with pnpm 10.34.3. The root pnpm workspace manages both applications with one `pnpm-lock.yaml`.
 
 ```sh
 pnpm run setup
+pnpm --filter studentmart-backend db:init
 pnpm run dev
 ```
 
 On Windows PowerShell, use `pnpm.cmd` if script execution policy blocks `pnpm`.
 
-`pnpm run dev` starts the API on port 3000 and Expo on port 8081. Scan the QR code with an Expo Go version compatible with SDK 54, or use an emulator/development build. iOS Simulator requires macOS; physical iPhones can connect to Expo from Windows.
+### PowerShell scripts
+
+```powershell
+.\scripts\run.ps1               # Chạy đồng thời Expo và NestJS
+.\scripts\run.ps1 --frontend    # Chỉ chạy Expo
+.\scripts\run.ps1 --backend     # Chỉ chạy NestJS
+.\scripts\add.ps1 AddAccountBio # Sinh migration từ thay đổi entity; chưa apply
+.\scripts\up.ps1                # Tạo database nếu thiếu và apply migration đang chờ
+.\scripts\check.ps1             # Kiểm tra kết nối, bảng, migration và schema
+```
+
+Các script tự xác định repository root nên có thể gọi từ thư mục khác. `add.ps1` mặc định dùng tên `SchemaChange` khi không truyền tên; hãy review SQL trước khi chạy `up.ps1`. TypeORM trả exit code 1 nếu không có thay đổi để sinh migration. `check.ps1` chỉ đọc database, trả code 1 khi không kết nối được, còn migration chờ hoặc schema lệch entity. `run.ps1` dùng Ctrl+C để dừng server. Nếu execution policy chặn `.ps1`, chạy bằng `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run.ps1` (thay tên script tương ứng); không cần thay đổi policy toàn máy.
+
+`pnpm run dev` starts the API on port 3000 and Expo on port 8081. Scan the QR code with an Expo Go version compatible with SDK 58 (see [Expo Go downloads](https://expo.dev/go)), or use an emulator/development build. iOS Simulator requires macOS; physical iPhones can connect to Expo from Windows.
 
 For a physical phone, copy `mobile/.env.example` to `mobile/.env` and set `EXPO_PUBLIC_API_URL=http://<computer-LAN-IP>:3000`. Keep the phone and computer on the same Wi-Fi and allow port 3000 through the local firewall. Restart Expo after changing the environment. Android Emulator uses `http://10.0.2.2:3000`; iOS Simulator uses `http://localhost:3000`.
 
-Backend configuration is optional: copy `backend/.env.example` to `backend/.env` to override defaults. The API binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. The mobile starter has a button to verify the connection.
+Before initialization, copy `backend/.env.example` to `backend/.env` and configure `DATABASE_URL` for PostgreSQL database `student-mart`. `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. The mobile starter has a button to verify the connection.
 
 ```sh
 pnpm run dev:backend  # API only, with reload
@@ -26,7 +40,7 @@ pnpm run build       # Compile backend
 pnpm --filter studentmart-backend start
 ```
 
-This initializes the development foundation; product features and PostgreSQL integration are still pending. See [mobile setup](mobile/README.md) and [backend setup](backend/README.md).
+The backend includes PostgreSQL integration, the initial Account entity/migration, and account creation business logic. Registration/login HTTP endpoints and the remaining product features are pending. See [mobile setup](mobile/README.md) and [backend setup](backend/README.md).
 
 **Ứng dụng kết nối sinh viên mua, bán và trao đổi đồ cũ trong Làng Đại học ĐHQG TP.HCM.**
 
@@ -117,7 +131,7 @@ Chi tiết phạm vi và căn cứ ưu tiên nằm trong [MVP Scope](https://git
 
 Ứng dụng được định hướng phát triển cross-platform. Phạm vi hệ điều hành phát hành sẽ được xác định theo thiết bị kiểm thử và khả năng triển khai.
 
-Framework backend đã chọn NestJS với Fastify adapter. ORM, dịch vụ lưu ảnh, gửi email và phương án tích hợp push sẽ được chốt trong bước thiết kế kỹ thuật.
+Framework backend đã chọn NestJS với Fastify adapter và TypeORM cho PostgreSQL. Dịch vụ lưu ảnh, gửi email và phương án tích hợp push sẽ được chốt trong bước thiết kế kỹ thuật.
 
 ## Trạng thái dự án
 
@@ -137,7 +151,7 @@ Trạng thái và người phụ trách từng công việc được theo dõi t
 
 StudentMart dùng **Three-Layer Architecture**, nhóm mã theo chức năng. Mobile áp dụng **MVVM nhẹ** bằng Screen và hook ViewModel; backend áp dụng **Controller → Service → Repository**.
 
-Đã tạo khung thư mục `mobile/` và `backend/` với ba tầng cho từng feature/module, manifest và ứng dụng khởi động được. Các thư mục nghiệp vụ chưa triển khai dùng `.gitkeep`; chưa có migration thực thi.
+Đã tạo khung thư mục `mobile/` và `backend/` với ba tầng cho từng feature/module, manifest và ứng dụng khởi động được. Backend có entity Account và migration khởi tạo; các thư mục nghiệp vụ chưa triển khai dùng `.gitkeep`.
 
 ```text
 StudentMart/

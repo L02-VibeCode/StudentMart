@@ -4,7 +4,7 @@ import { loadConfig } from "../../src/shared/config/env.js";
 
 describe("backend bootstrap", () => {
   it("returns a healthy response", async () => {
-    const app = await buildApp(loadConfig({ NODE_ENV: "test" }));
+    const app = await buildApp(loadConfig({ NODE_ENV: "test" }), { connectDatabase: false });
     try {
       await app.init();
       await app.getHttpAdapter().getInstance().ready();

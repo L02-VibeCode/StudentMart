@@ -2,7 +2,7 @@
 
 **Kiến trúc:** Three-Layer theo feature, MVVM nhẹ cho UI React Native + Expo.
 
-Ứng dụng TypeScript đã khởi tạo với Expo SDK 54, React 19.1 và React Native 0.81.5. Quyết định và sơ đồ chi tiết ở [solution_tree.md](../docs/solution_tree.md); dữ liệu/nghiệp vụ ở [schema.md](../docs/schema.md).
+Ứng dụng dùng Expo SDK 58, React 19.3, React Native 0.88.1 và TypeScript 6. Yêu cầu Node.js 22.13+ (nhánh 22.x), 24.3+ (nhánh 24.x), hoặc 26+.
 
 ## Chạy cục bộ
 
@@ -10,7 +10,9 @@ Từ repository root: `pnpm run setup`, sau đó `pnpm run dev`. Hoặc chạy r
 
 Copy `.env.example` thành `.env` để cấu hình `EXPO_PUBLIC_API_URL`. Với điện thoại thật, dùng IP LAN của máy chạy backend, ví dụ `http://192.168.1.10:3000`; hai thiết bị cần cùng Wi-Fi. Android Emulator dùng `http://10.0.2.2:3000`; iOS Simulator dùng `http://localhost:3000`. Khởi động lại Expo sau khi đổi env. Chỉ đặt cấu hình public trong biến `EXPO_PUBLIC_*`.
 
-Màn hình khởi đầu có nút kiểm tra `GET /health` của backend. `pnpm run typecheck` kiểm tra TypeScript. `pnpm run android` mở Android; `pnpm run ios` yêu cầu macOS cho simulator. Dùng Expo Go tương thích SDK 54 hoặc development build. Web chưa được cấu hình trong starter mobile.
+Màn hình khởi đầu có nút kiểm tra `GET /health` của backend. `pnpm run typecheck` kiểm tra TypeScript. `pnpm run android` mở Android; `pnpm run ios` yêu cầu macOS cho simulator. Dùng Expo Go tương thích SDK 58 từ [expo.dev/go](https://expo.dev/go) hoặc development build; development build cũ cần build lại sau khi nâng SDK. Web chưa được cấu hình trong starter mobile.
+
+Từ root, chạy `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run.ps1 --frontend` để mở Expo. Nếu Metro còn cache của SDK cũ, chạy `pnpm --filter studentmart-mobile exec expo start --clear`.
 
 ## Đặt code ở đâu?
 

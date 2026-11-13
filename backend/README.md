@@ -10,6 +10,7 @@ Yêu cầu Node.js 22.12+ và pnpm 10.34.3. Trong `backend/`:
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm run db:init
 pnpm run start:dev
 pnpm run typecheck
 pnpm test
@@ -19,9 +20,31 @@ pnpm start
 
 Copy `.env.example` thành `.env` nếu muốn thay đổi cấu hình. Mặc định API lắng nghe `0.0.0.0:3000` để điện thoại cùng mạng LAN truy cập được. `GET /health` trả về `{"status":"ok"}`. `CORS_ORIGINS` là danh sách origin cách nhau bằng dấu phẩy cho browser client; ứng dụng native không bị browser CORS giới hạn.
 
-`DATABASE_URL` được đọc từ `backend/.env` khi khởi động và được kiểm tra trong `loadConfig()`. Tên database là `student-mart`; định dạng: `postgresql://USER:PASSWORD@HOST:5432/student-mart`. Các ký tự đặc biệt trong username/password cần URL-encode. Biến môi trường của process được ưu tiên hơn file `.env`. File `.env` và file nguồn credentials cục bộ `env-varibale.md` được Git ignore; `.env.example` chỉ chứa giá trị mẫu. Cấu hình connection string chưa tạo database, mở kết nối hay chạy migration.
+`DATABASE_URL` được đọc từ `backend/.env` khi khởi động và được kiểm tra trong `loadConfig()`. Tên database là `student-mart`; định dạng: `postgresql://USER:PASSWORD@HOST:5432/student-mart`. Các ký tự đặc biệt trong username/password cần URL-encode. Biến môi trường của process được ưu tiên hơn file `.env`. File `.env` và file nguồn credentials cục bộ `env-varibale.md` được Git ignore; `.env.example` chỉ chứa giá trị mẫu. Khi chạy backend, `DATABASE_URL` là bắt buộc và NestJS mở connection pool qua TypeORM.
 
-`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Test kiểm tra HTTP bằng Fastify injection, không cần database hoặc cổng mạng. Chưa cấu hình PostgreSQL/ORM/migration và chưa triển khai nghiệp vụ.
+`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Unit test kiểm tra HTTP bằng Fastify injection và tắt kết nối database một cách tường minh. Account là entity đầu tiên; chưa có API đăng ký/đăng nhập.
+
+## Account và migration code first
+
+TypeORM quản lý entity `src/modules/accounts/business/account.entity.ts`, ánh xạ tới bảng PostgreSQL `"Account"` (phải giữ dấu nháy kép trong SQL do tên có chữ hoa). Các cột: UUID `id`, email duy nhất, `password_hash`, `display_name`, role `MEMBER`/`ADMIN`, `created_at`, `updated_at`.
+
+`AccountsService.create()` kiểm tra dữ liệu, trim/lowercase email, trim tên hiển thị và hash mật khẩu bằng scrypt với salt ngẫu nhiên. Tài khoản mới luôn là MEMBER; hàm trả về không chứa hash. TypeORM cũng không select hash mặc định. Đọc dữ liệu để trả API vẫn cần DTO cho phép rõ các trường công khai. Không seed tài khoản/admin hoặc mật khẩu mặc định.
+
+`synchronize: false` và `migrationsRun: false`: ứng dụng không tự sửa schema khi khởi động. Entity là nguồn để sinh migration; SQL trong migration được review rồi mới apply. Lệnh dưới đây chạy từ `backend/`:
+
+```sh
+pnpm run db:create       # Tạo student-mart nếu chưa tồn tại; giữ nguyên database đã có
+pnpm run migration:show
+pnpm run migration:run
+pnpm run db:init         # db:create rồi migration:run; dùng cho lần khởi tạo đầu
+pnpm run test:integration
+```
+
+Sau khi sửa entity, chạy `pnpm run migration:generate src/shared/database/migrations/TenThayDoi`, kiểm tra SQL đã sinh rồi chạy `pnpm run migration:run`. Các lệnh CLI tự build trước khi đọc DataSource đã compile. Lệnh `pnpm run migration:revert` hoàn tác migration cuối; hoàn tác migration Account sẽ xóa bảng và dữ liệu trong bảng đó.
+
+Migration nằm ở `src/shared/database/migrations/`; lịch sử nằm trong bảng `typeorm_migrations`. Yêu cầu PostgreSQL 13+ cho `gen_random_uuid()`. Lệnh tạo database dùng database bảo trì `postgres`, cần quyền CREATEDB nếu `student-mart` chưa tồn tại. Khi database đã được cấp sẵn, chỉ cần `migration:run` và quyền DDL trong schema `public`.
+
+Integration test yêu cầu database đã migrate, kiểm tra lưu Account, UUID/timestamps, email unique, ẩn hash và schema khớp entity. Mọi dữ liệu test được đặt trong transaction và rollback; test không tự chạy migration.
 
 ## Đặt code ở đâu?
 
@@ -43,6 +66,6 @@ Module hiện có: auth, users, catalog, media, listings, chat, notifications, m
 
 Controller không chứa SQL/nghiệp vụ; Repository không trả HTTP response. Service/workflow dùng cùng transaction qua các module; không commit message rồi tạo outbox trong một transaction khác. Worker dùng cùng kiểm tra quyền/binding với API.
 
-Giữ các bất biến: verify tùy chọn, không tự chat, một hội thoại/cặp người/tin, retry không trùng, lịch sử theo quyền, owner_state tách moderation_state. Framework đã chọn NestJS; không tự chốt ORM, provider hoặc nội dung lookup chưa được duyệt.
+Giữ các bất biến: verify tùy chọn, không tự chat, một hội thoại/cặp người/tin, retry không trùng, lịch sử theo quyền, owner_state tách moderation_state. Framework đã chọn NestJS và ORM đã chọn TypeORM; không tự chốt provider hoặc nội dung lookup chưa được duyệt.
 
-Các .gitkeep chỉ giữ khung trong Git, bỏ khi có code thật. Backend dùng pnpm workspace với lockfile chung ở repository root và Vitest cho test. Công cụ migration chưa được chọn; không apply DB dùng chung chỉ vì đã tạo file migration.
+Các .gitkeep chỉ giữ khung trong Git, bỏ khi có code thật. Backend dùng pnpm workspace với lockfile chung ở repository root và Vitest cho test. Migration dùng TypeORM; chỉ apply migration đã được review trong phạm vi thay đổi được yêu cầu.
