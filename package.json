@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.34.3",
-  "engines": { "node": "^22.13.0 || ^24.3.0 || >=26.0.0" },
+  "engines": {
+    "node": "^22.13.0 || ^24.3.0 || >=26.0.0"
+  },
   "scripts": {
     "setup": "pnpm install --frozen-lockfile",
     "dev": "concurrently --kill-others -n api,mobile \"pnpm run dev:backend\" \"pnpm run dev:mobile\"",
@@ -13,7 +15,13 @@
     "ios": "pnpm --filter studentmart-mobile run ios",
     "build": "pnpm --filter studentmart-backend run build",
     "typecheck": "pnpm -r run typecheck",
-    "test": "pnpm --filter studentmart-backend test"
+    "test": "pnpm run test:contracts && pnpm --filter studentmart-backend test",
+    "test:contracts": "node --test tests/contracts/*.test.cjs"
   },
-  "devDependencies": { "concurrently": "^9.2.1" }
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "concurrently": "^9.2.1",
+    "yaml": "2.9.1"
+  }
 }

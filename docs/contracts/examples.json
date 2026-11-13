@@ -1,0 +1,59 @@
+{
+  "register": {
+    "email": "student@example.invalid",
+    "password": "example-password-only",
+    "displayName": "Sinh viên"
+  },
+  "login": {
+    "email": "student@example.invalid",
+    "password": "example-password-only"
+  },
+  "updateProfile": {
+    "displayName": "Tên hiển thị mới",
+    "declaredSchoolId": null,
+    "areaId": null,
+    "bio": "Mua bán và trao đổi đồ dùng sinh viên."
+  },
+  "privateAccount": {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "email": "student@example.invalid",
+    "displayName": "Sinh viên",
+    "role": "MEMBER",
+    "avatarUrl": null,
+    "declaredSchool": null,
+    "area": null,
+    "bio": null,
+    "schoolVerification": {
+      "status": "UNVERIFIED",
+      "school": null,
+      "verifiedAt": null
+    },
+    "createdAt": "2026-11-13T00:00:00Z",
+    "updatedAt": "2026-11-13T00:00:00Z"
+  },
+  "publicAccount": {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "displayName": "Sinh viên",
+    "avatarUrl": null,
+    "declaredSchool": null,
+    "bio": null,
+    "schoolVerification": {
+      "status": "UNVERIFIED",
+      "school": null
+    }
+  },
+  "session": {
+    "token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "expiresAt": "2026-12-13T00:00:00Z"
+  },
+  "validationError": {
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Thông tin chưa hợp lệ.",
+      "fields": {
+        "displayName": "Tên hiển thị không được để trống."
+      },
+      "requestId": "example-request-001"
+    }
+  }
+}
