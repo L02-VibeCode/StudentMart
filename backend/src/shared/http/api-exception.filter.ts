@@ -1,6 +1,7 @@
 import { Catch, HttpException, type ArgumentsHost, type ExceptionFilter } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
+import { AuthError } from "../../modules/auth/business/auth-errors";
 import { EmailAlreadyExistsError, RegistrationRateLimitedError, RegistrationUnavailableError } from "../../modules/accounts/business/registration-errors";
 
 @Catch()
@@ -16,7 +17,15 @@ export function sendApiError(error: unknown, request: FastifyRequest, reply: Fas
     let code = "INTERNAL_ERROR";
     let message = "Không thể xử lý yêu cầu.";
     let fields: Record<string, string> | undefined;
-    if (error instanceof ZodError) {
+    if (error instanceof AuthError) {
+      status = error.status;
+      code = error.code;
+      message = error.code === "INVALID_CREDENTIALS" ? "Email hoặc mật khẩu không đúng."
+        : error.code === "FORBIDDEN" ? "Tài khoản không được phép truy cập."
+        : error.code === "RATE_LIMITED" ? "Bạn đã thử quá nhiều lần. Vui lòng thử lại sau."
+        : error.code === "SESSION_EXPIRED" ? "Phiên đăng nhập đã hết hạn." : "Không thể xác thực yêu cầu.";
+      if (error.retryAfter !== undefined) reply.header("Retry-After", error.retryAfter);
+    } else if (error instanceof ZodError) {
       status = 400;
       code = "VALIDATION_ERROR";
       message = "Thông tin chưa hợp lệ.";

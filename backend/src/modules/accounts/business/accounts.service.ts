@@ -21,7 +21,7 @@ const createAccountSchema = z.strictObject({
 });
 
 export type CreateAccountInput = z.input<typeof createAccountSchema>;
-export type PublicAccount = Omit<Account, "passwordHash">;
+export type PublicAccount = Pick<Account, "id" | "email" | "displayName" | "role" | "createdAt" | "updatedAt">;
 
 export class AccountsService {
   constructor(private readonly accounts: Repository<Account>) {}

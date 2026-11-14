@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { DataSourceOptions } from "typeorm";
 import { Account } from "../../modules/accounts/business/account.entity";
+import { AuthSession } from "../../modules/auth/business/auth-session.entity";
 import type { AppConfig } from "../config/env";
 
 export function databaseOptions(config: AppConfig): DataSourceOptions {
@@ -10,7 +11,7 @@ export function databaseOptions(config: AppConfig): DataSourceOptions {
   return {
     type: "postgres",
     url: config.DATABASE_URL,
-    entities: [Account],
+    entities: [Account, AuthSession],
     migrations: [join(__dirname, "migrations", "*.js")],
     migrationsTableName: "typeorm_migrations",
     synchronize: false,

@@ -61,6 +61,32 @@ Response dùng `Cache-Control: no-store`, `X-Request-Id` do server tạo; lỗi 
 
 Xem [bằng chứng triển khai và kiểm tra #87](../docs/implementation/task-16-02-be-register.md).
 
+## API đăng nhập và phiên — #90
+
+`POST /api/v1/auth/login` nhận đúng `{email,password}`; email trim/lowercase, password giữ nguyên và có 8–128 Unicode code point. Backend kiểm tra scrypt theo policy hiện có (N=16384/r=8/p=1), so sánh timing-safe; email không tồn tại vẫn thực hiện dummy scrypt. Email không tồn tại và mật khẩu sai cùng trả `401 INVALID_CREDENTIALS`, không tạo phiên.
+
+Thành công trả `200 {account,session:{token,expiresAt}}`. Token opaque được sinh từ 32 random byte, base64url 43 ký tự; không phải JWT. Bảng `"AuthSession"` chỉ giữ SHA-256 digest, account FK, thời điểm tạo/hết hạn/thu hồi. Phiên hết hạn tuyệt đối sau 30 ngày; không refresh hay gia hạn trượt. Các response login/me/logout có `Cache-Control: no-store`; password, token/digest và restriction không được log hoặc trả trong DTO hồ sơ.
+
+`GET /api/v1/accounts/me` dùng `Authorization: Bearer TOKEN` để nạp account từ phiên server. Query/body accountId không quyết định danh tính. Token thiếu/sai/unknown/revoked trả `401 UNAUTHENTICATED`; phiên quá hạn trả `401 SESSION_EXPIRED`. Mỗi lần gọi nạp quyền account hiện tại. Không yêu cầu verify email trường; khi chưa có nguồn TASK-18, projection vẫn UNVERIFIED.
+
+`POST /api/v1/auth/logout` thu hồi đúng bearer được gửi và trả 204. Token đúng format nhưng unknown/expired/revoked vẫn trả 204; thiếu hoặc sai format trả 401. Endpoint này hỗ trợ cleanup nếu mobile ghi SecureStore thất bại và đổi tài khoản. Các luồng UX logout/offline đầy đủ vẫn thuộc TASK-16.05.
+
+Account bổ sung `login_disabled_at` nullable, mặc định null, `select:false`. Đây là nguồn hạn chế đăng nhập do server quản lý, không có trong register/update/profile DTO; tài khoản bị đặt timestamp trả `403 FORBIDDEN` khi login hoặc gọi me. Không suy luận hạn chế từ role MEMBER hay trạng thái verify. Module quản trị ở task sau chịu trách nhiệm thao tác hạn chế; ticket này không tạo admin API hoặc khóa tài khoản sau nhiều lần thử sai.
+
+Đặt secret ngẫu nhiên ít nhất 32 ký tự trong `backend/.env`:
+
+```dotenv
+AUTH_RATE_LIMIT_SECRET=replace-with-a-random-secret-of-at-least-32-characters
+```
+
+Đây là secret chỉ dùng phía server, không đặt `EXPO_PUBLIC_*` hoặc commit giá trị thật. API auth yêu cầu secret khi khởi động; CLI database không cần secret. Login giới hạn hai bucket độc lập: tối đa 5 lần thất bại/15 phút/IP và 5 lần thất bại/15 phút/HMAC(email normalize). Đạt một giới hạn trả 429 + `Retry-After` giây; request đang hash giữ chỗ để không vượt giới hạn khi chạy đồng thời. Thành công/lỗi database không tính là mật khẩu sai; lỗi credentials hoặc tài khoản bị hạn chế tính là lần thất bại. Không tin X-Forwarded-For mặc định.
+
+Bộ đếm dùng fixed window trong memory một process, giới hạn 20.000 bucket, đầy trả 503 và restart sẽ reset; trước khi chạy nhiều replica cần store dùng chung. Không lưu email thô trong khóa limiter. Secret HMAC thay đổi sẽ thay khóa email; không ảnh hưởng digest của phiên đang lưu trong database.
+
+Migration `1794622765393-AddAuthSessions.ts` được sinh bằng `scripts/add.ps1 AddAuthSessions`, review up/down rồi apply `scripts/up.ps1` vào `student-mart` ngày 2026-11-14. Up thêm bảng/index/FK RESTRICT/CHECK thời hạn, cột restriction nullable; không sửa dữ liệu Account cũ. Down xóa bảng phiên/cột mới (không thực hiện). `scripts/check.ps1` sau apply: không pending, schema khớp entity.
+
+Kiểm tra: `pnpm --filter studentmart-backend test` và `pnpm --filter studentmart-backend test:integration`. Tests bao phủ mật khẩu đúng/sai/unknown, digest-only, 30 ngày, me theo bearer, trường verify tùy chọn, expiry/revocation, restriction, logout idempotent, lỗi an toàn, không log credential và giới hạn thử/chạy đồng thời. Account test dùng UUID, session/account được cleanup đúng fixture; không reset database. Swagger tự nhận login/me/logout từ controller và dùng schema hợp đồng chung.
+
 ## Account và migration code first
 
 TypeORM quản lý entity `src/modules/accounts/business/account.entity.ts`, ánh xạ tới bảng PostgreSQL `"Account"` (phải giữ dấu nháy kép trong SQL do tên có chữ hoa). Các cột: UUID `id`, email duy nhất, `password_hash`, `display_name`, role `MEMBER`/`ADMIN`, `created_at`, `updated_at`.

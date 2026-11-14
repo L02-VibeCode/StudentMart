@@ -4,6 +4,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  AUTH_RATE_LIMIT_SECRET: z.string().min(32).optional(),
   CORS_ORIGINS: z.string().default("http://localhost:8081,http://localhost:19006"),
   DATABASE_URL: z.string().refine((value) => {
     try {

@@ -35,6 +35,9 @@ export class Account {
   })
   role!: AccountRole;
 
+  @Column({ name: "login_disabled_at", type: "timestamptz", nullable: true, select: false })
+  loginDisabledAt!: Date | null;
+
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt!: Date;
 
