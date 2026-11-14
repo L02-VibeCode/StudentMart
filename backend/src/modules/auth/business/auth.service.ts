@@ -8,6 +8,7 @@ import { AuthError } from "./auth-errors";
 import { LoginRateLimiter } from "./login-rate-limiter";
 import { verifyPassword } from "./password";
 import type { SessionActor } from "./session-actor";
+import type { LogoutCleanupHook } from "./logout-cleanup";
 
 const loginSchema = z.strictObject({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -21,7 +22,8 @@ function bearer(header: string | undefined): string {
 }
 
 export class AuthService {
-  constructor(private readonly source: DataSource, private readonly limiter: LoginRateLimiter) {}
+  constructor(private readonly source: DataSource, private readonly limiter: LoginRateLimiter,
+    private readonly logoutCleanup: readonly LogoutCleanupHook[] = []) {}
   async login(input: unknown, ip: string) {
     const { email, password } = loginSchema.parse(input);
     const complete = this.limiter.reserve(ip, email);
@@ -66,6 +68,14 @@ export class AuthService {
   }
   async logout(authorization?: string) {
     const token = bearer(authorization);
-    await this.source.getRepository(AuthSession).update({ tokenHash: digest(token), revokedAt: IsNull() }, { revokedAt: new Date() });
+    const sessions = this.source.getRepository(AuthSession);
+    const session = await sessions.findOneBy({ tokenHash: digest(token) });
+    if (!session) return;
+    // Commit revocation before invoking external systems; hook failure must never revive a token.
+    await sessions.update({ id: session.id, revokedAt: IsNull() }, { revokedAt: new Date() });
+    const scope = Object.freeze({ sessionId: session.id, accountId: session.accountId });
+    const results = await Promise.allSettled(this.logoutCleanup.map(hook => Promise.resolve().then(() => hook.onSessionRevoked(scope))));
+    // Retry on a repeated logout, including already-revoked sessions. Adapters must be idempotent.
+    if (results.some(result => result.status === "rejected")) throw new AuthError(503, "SERVICE_UNAVAILABLE");
   }
 }

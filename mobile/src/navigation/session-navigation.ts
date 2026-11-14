@@ -97,6 +97,7 @@ export function createSessionNavigation(auth: AuthCoordinator, listings: Listing
     },
     openListing(id: string) { if (!parseIntent({ action: "contactListing", listingId: id })) return; generation++; update({ route: { name: "listing", listingId: id }, intent: null, resuming: false, message: "" }); },
     browse() { generation++; update({ route: { name: "browse" }, intent: null, resuming: false, message: "" }); },
+    resetForLogout() { generation++; origin = { name: "browse" }; contactLease = null; update({ route: { name: "browse" }, intent: null, resuming: false, message: "" }); },
     login(email = "", created = false) { if (!state.intent) origin = publicOrigin(state.route); update({ route: { name: "login", email, created }, message: "" }); },
     register() { update({ route: { name: "register" }, message: "" }); },
     cancelLogin() { generation++; update({ route: origin, intent: null, resuming: false, message: "" }); },

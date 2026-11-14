@@ -24,7 +24,7 @@ Khi app có phiên trở về foreground, `AppState` buộc xác minh lại; for
 
 Return intent chỉ cho phép contactListing + UUID, createListing và openPrivateProfile; không nhận URL, token, role, accountId hoặc callback từ input. Sau login phải đọc lại tài nguyên và kiểm tra quyền server trước khi điều hướng. Hủy/Back xóa intent, không tự gửi tin hoặc đăng bài. Trên Android dùng [BackHandler](https://reactnative.dev/docs/backhandler); foreground dùng [AppState](https://reactnative.dev/docs/appstate). Việc nối cổng quyền vào API tin/chat thật còn pending các task domain.
 
-Màn hình Cá nhân hiện hiển thị tên/email/quyền/trạng thái xác thực từ `/me`, chưa có chức năng chỉnh sửa hoặc thống kê tin đăng. **Đổi tài khoản** yêu cầu xác nhận, dọn danh tính và credential trước khi đăng nhập tài khoản khác. Nếu máy chủ chưa xác nhận thu hồi, app thông báo đúng giới hạn này. Epoch và hàng đợi ghi SecureStore ngăn response/ghi phiên cũ làm xuất hiện dữ liệu tài khoản trước.
+Màn hình Cá nhân hiện hiển thị tên/email/quyền/trạng thái xác thực từ `/me`, chưa có chức năng chỉnh sửa hoặc thống kê tin đăng. **Đăng xuất** yêu cầu xác nhận, dọn danh tính và credential trước khi đăng nhập tài khoản khác. Nếu máy chủ chưa xác nhận thu hồi, app thông báo đúng giới hạn này. Epoch và hàng đợi ghi SecureStore ngăn response/ghi phiên cũ làm xuất hiện dữ liệu tài khoản trước.
 
 `pnpm run typecheck` kiểm tra TypeScript; `pnpm test` trong mobile chạy Vitest cho validation, state đăng ký, HTTP adapter và API origin. Từ root, `pnpm test` chạy cả contract/BE/FE; `pnpm --filter studentmart-backend test:integration` kiểm tra client mobile qua HTTP thật tới PostgreSQL (dùng email UUID và cleanup). Xem [ma trận nghiệm thu #86/#87/#88](../docs/implementation/task-16-02-audit.md).
 
@@ -37,7 +37,7 @@ Màn hình Cá nhân hiện hiển thị tên/email/quyền/trạng thái xác t
 3. Reload Expo Go. Nếu vẫn thấy màn hình cũ, dừng Metro rồi chạy `pnpm --filter studentmart-mobile exec expo start --lan --clear` và quét QR mới. Nếu có env cũ `localhost:3000`, xóa giá trị để auto-detect LAN hoặc thay bằng IP máy.
 4. Sau bước kiểm tra phiên, app mở **Khám phá StudentMart**; chọn **Đăng nhập/Cá nhân** hoặc **Đăng ký ngay** trong login để tạo tài khoản. Nếu có credential nhưng chưa xác minh, không mở dữ liệu Cá nhân; có thể tiếp tục khám phá công khai mà không tự được cấp quyền. Trong bản dev, mở **Kiểm tra kết nối (dev)** ở cuối form login/register để xem API origin đang dùng và kiểm tra `/health`.
 5. Thử email mới, mật khẩu khớp → tạo thành công rồi chuyển đăng nhập; thử email cũ → lỗi email; sai confirm → không gửi; bấm nhanh hai lần khi đang tạo → một request. Không nhập mật khẩu dùng cho dịch vụ khác khi thử local.
-6. Đăng nhập với email/mật khẩu đã tạo → màn hình Cá nhân phải hiện đúng tên/email; tài khoản chưa verify vẫn đăng nhập. Sai mật khẩu → lỗi chung, không vào Cá nhân. Bấm nhanh nhiều lần → một request khi đang xử lý. Dùng Đổi tài khoản để thử B và xác nhận không còn danh tính A. Đóng/mở app để kiểm tra SecureStore và `/me` trên hệ điều hành thực tế.
+6. Đăng nhập với email/mật khẩu đã tạo → màn hình Cá nhân phải hiện đúng tên/email; tài khoản chưa verify vẫn đăng nhập. Sai mật khẩu → lỗi chung, không vào Cá nhân. Bấm nhanh nhiều lần → một request khi đang xử lý. Dùng Đăng xuất để thử B và xác nhận không còn danh tính A. Đóng/mở app để kiểm tra SecureStore và `/me` trên hệ điều hành thực tế.
 
 Ma trận nghiệm thu đăng nhập và giới hạn kiểm thử native: [TASK-16.03 #89/#90/#91](../docs/implementation/task-16-03-login.md). Typecheck/export và adapter giả không thay thế kiểm tra đọc/ghi SecureStore, keyboard, safe area trên thiết bị thật.
 
@@ -67,3 +67,5 @@ Luồng gọi: **Screen → hook ViewModel → business service → data reposit
 Hook là cách tổ chức state UI, không tự giữ dữ liệu qua app bị kill. Nháp và pending message cần persistence phân vùng theo tài khoản. Verify tùy chọn; từ chối push vẫn dùng inbox; backend mới quyết định quyền cuối cùng.
 
 Mỗi thư mục lá có .gitkeep để giữ khung trong Git; bỏ khi đã có code thật. Các .ts/.tsx trong tài liệu mẫu là tên file sẽ viết sau, không phải implementation sẵn có. Mobile dùng pnpm workspace với lockfile chung ở repository root; router chưa được chọn. Không dùng khóa server trong cấu hình public.
+
+Logout #95/#96/#97: see [acceptance evidence and device checklist](../docs/implementation/task-16-05-logout.md). Local cleanup completes without waiting for server revocation; the app returns to public browsing. Private cache/realtime/push consumers must register account-scoped cleanup resources. Provider and native-device checks remain pending as documented.

@@ -16,9 +16,12 @@ import { createSessionNavigation } from "./src/navigation/session-navigation";
 import { unavailableListings } from "./src/features/listings/business/listing-gateway";
 import { BrowseScreen, ListingScreen } from "./src/features/listings/presentation/listing-screens";
 import type { LoginInput } from "./src/features/auth/business/auth";
+import { createAccountLogoutResources } from "./src/features/auth/business/account-logout-resources";
 
 const register = createRegistrationApi(API_URL);
-const auth = createAuthCoordinator(createAuthApi(API_URL), credentialStore);
+// Future account-scoped cache/chat/push adapters register here; public data stays outside this registry.
+const accountResources = createAccountLogoutResources();
+const auth = createAuthCoordinator(createAuthApi(API_URL), credentialStore, Date.now, accountResources);
 const navigation = createSessionNavigation(auth, unavailableListings);
 
 async function cancelLogin() {
@@ -57,7 +60,7 @@ export default function App() {
   } else if (nav.resuming) {
     screen = <AuthLayout title="Đang xác nhận quyền truy cập" subtitle="Kiểm tra lại phiên và ngữ cảnh trước khi tiếp tục."><ActivityIndicator /><AuthButton label="Hủy, quay lại" onPress={navigation.cancelLogin} /></AuthLayout>;
   } else if (route.name === "profile" && state.status === "authenticated" && state.account) {
-    screen = <AccountScreen key={state.account.id} account={state.account} onEndSession={async () => { navigation.browse(); await auth.endSession(); navigation.login(); }} />;
+    screen = <AccountScreen key={state.account.id} account={state.account} onEndSession={async () => { navigation.resetForLogout(); await auth.endSession(); }} />;
   } else if (route.name === "compose" && state.status === "authenticated") {
     screen = <AuthLayout title="Đăng tin" subtitle="Chức năng đang hoàn thiện. Bạn có thể quay về khám phá."><AuthButton label="Quay lại" onPress={navigation.browse} /></AuthLayout>;
   } else if (route.name === "register") {
