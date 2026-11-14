@@ -27,9 +27,9 @@ Các script tự xác định repository root nên có thể gọi từ thư m�
 
 `pnpm run dev` starts the API on port 3000 and Expo on port 8081. Scan the QR code with an Expo Go version compatible with SDK 58 (see [Expo Go downloads](https://expo.dev/go)), or use an emulator/development build. iOS Simulator requires macOS; physical iPhones can connect to Expo from Windows.
 
-For a physical phone, copy `mobile/.env.example` to `mobile/.env` and set `EXPO_PUBLIC_API_URL=http://<computer-LAN-IP>:3000`. Keep the phone and computer on the same Wi-Fi and allow port 3000 through the local firewall. Restart Expo after changing the environment. Android Emulator uses `http://10.0.2.2:3000`; iOS Simulator uses `http://localhost:3000`.
+For a physical phone in LAN development, the app uses Metro's host on port 3000 automatically when `EXPO_PUBLIC_API_URL` is unset or blank. For a separate API host/port or a release build, set this variable in `mobile/.env` to the API origin (e.g. `http://<computer-LAN-IP>:3000` for local testing). Keep the phone and computer on the same network and allow port 3000 through the local firewall. Restart Expo after changing the environment. Android Emulator uses `http://10.0.2.2:3000`; iOS Simulator uses `http://localhost:3000`. See [phone troubleshooting](mobile/README.md#kiểm-tra-điện-thoại-sau-khi-quét-qr).
 
-Before initialization, copy `backend/.env.example` to `backend/.env` and configure `DATABASE_URL` for PostgreSQL database `student-mart`. `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. The mobile starter has a button to verify the connection.
+Before initialization, copy `backend/.env.example` to `backend/.env`, configure `DATABASE_URL` for PostgreSQL database `student-mart`, and set a random `AUTH_RATE_LIMIT_SECRET` of at least 32 characters (see [backend setup](backend/README.md)). `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. Mobile verifies saved sessions, then opens login or the confirmed account; its development connection panel can check backend health.
 
 ```sh
 pnpm run dev:backend  # API only, with reload
@@ -40,7 +40,7 @@ pnpm run build       # Compile backend
 pnpm --filter studentmart-backend start
 ```
 
-The backend includes PostgreSQL integration, the initial Account entity/migration, and account creation business logic. Registration/login HTTP endpoints and the remaining product features are pending. See [mobile setup](mobile/README.md) and [backend setup](backend/README.md).
+The backend includes registration, login, current-account and session-revocation APIs. Mobile login stores credentials with Expo SecureStore and confirms identity through `/accounts/me`. See the [TASK-16.03 verification matrix](docs/implementation/task-16-03-login.md). After starting the backend, open **[Swagger UI](http://localhost:3000/api/docs)** to inspect and test implemented APIs. OpenAPI exports: `/api/docs/openapi.json` and `/api/docs/openapi.yaml`. See [API docs installation and usage](backend/README.md#swagger-ui--tài-liệu-và-thử-api), [mobile setup](mobile/README.md) and [backend setup](backend/README.md).
 
 Baseline hợp đồng tài khoản TASK-16.01 (#83): [OpenAPI v1](docs/contracts/accounts.openapi.yaml), [mô hình tài khoản, phiên và migration dự kiến](docs/contracts/account-model.md), [hợp đồng tích hợp mobile](docs/contracts/account-mobile.md). Đây là đặc tả cho các ticket triển khai sau; endpoint chưa được triển khai bởi ticket hợp đồng. Dữ liệu lookup TASK-15 và provider avatar cần được xác nhận trước các phần phụ thuộc.
 

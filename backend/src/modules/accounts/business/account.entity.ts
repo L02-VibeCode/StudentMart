@@ -1,5 +1,6 @@
 import {
   Column,
+  Check,
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
@@ -12,6 +13,7 @@ export enum AccountRole {
 }
 
 @Entity({ name: "Account" })
+@Check("CHK_Account_email_normalized", '"email" = lower(btrim("email"))')
 export class Account {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
@@ -32,6 +34,9 @@ export class Account {
     default: AccountRole.MEMBER,
   })
   role!: AccountRole;
+
+  @Column({ name: "login_disabled_at", type: "timestamptz", nullable: true, select: false })
+  loginDisabledAt!: Date | null;
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt!: Date;

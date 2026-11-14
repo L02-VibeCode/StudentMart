@@ -1,6 +1,7 @@
 import { Module, type DynamicModule } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AccountsModule } from "./modules/accounts/accounts.module";
+import { AuthModule } from "./modules/auth/auth.module";
 import { HealthController } from "./modules/health/presentation/health.controller";
 import type { AppConfig } from "./shared/config/env";
 import { databaseOptions } from "./shared/database/database-options";
@@ -11,7 +12,7 @@ export class AppModule {
     return {
       module: AppModule,
       imports: connectDatabase
-        ? [TypeOrmModule.forRoot({ ...databaseOptions(config), retryAttempts: 1 }), AccountsModule]
+        ? [TypeOrmModule.forRoot({ ...databaseOptions(config), retryAttempts: 1 }), AccountsModule, AuthModule.register(config)]
         : [],
     };
   }

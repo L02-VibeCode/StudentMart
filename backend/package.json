@@ -6,7 +6,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && node scripts/copy-api-contract.cjs",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start": "node dist/bootstrap/server.js",
@@ -22,19 +22,24 @@
     "migration:revert": "pnpm run build && typeorm migration:revert -d dist/shared/database/data-source.js"
   },
   "dependencies": {
+    "@fastify/static": "^10.1.2",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-fastify": "^11.0.0",
+    "@nestjs/swagger": "^11.4.8",
     "@nestjs/typeorm": "^11.0.3",
     "dotenv": "^17.2.3",
+    "fastify": "5.12.8",
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "typeorm": "~0.3.31",
+    "yaml": "2.9.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
+    "@nestjs/testing": "11.2.9",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.23.1",
     "typescript": "^5.9.3",

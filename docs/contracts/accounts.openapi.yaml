@@ -25,6 +25,9 @@ paths:
       operationId: registerAccount
       tags: [Auth]
       summary: Register a MEMBER without school verification
+      description: >-
+        JSON body is limited to 16384 bytes. Five attempts per 15 minutes per IP,
+        including invalid requests. Password is never trimmed or normalized.
       security: []
       requestBody:
         required: true
@@ -43,6 +46,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+        '413':
+          description: PAYLOAD_TOO_LARGE; JSON body exceeds 16384 bytes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '415':
+          description: UNSUPPORTED_MEDIA_TYPE; unsupported request content type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
         '429':
           $ref: '#/components/responses/RateLimited'
         default:
@@ -52,6 +67,10 @@ paths:
       operationId: loginAccount
       tags: [Auth]
       summary: Authenticate and create a 30-day server-side session
+      description: >-
+        JSON body limit is 16384 bytes. At most five failed attempts per 15 minutes
+        for each IP and each HMAC of the normalized email; concurrent attempts
+        reserve capacity. School email verification is not required.
       security: []
       requestBody:
         required: true
@@ -79,6 +98,18 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '413':
+          description: PAYLOAD_TOO_LARGE; JSON body exceeds 16384 bytes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '415':
+          description: UNSUPPORTED_MEDIA_TYPE; unsupported request content type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
         '429':
           $ref: '#/components/responses/RateLimited'
         default:

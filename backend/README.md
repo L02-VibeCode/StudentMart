@@ -22,7 +22,80 @@ Copy `.env.example` thành `.env` nếu muốn thay đổi cấu hình. Mặc đ
 
 `DATABASE_URL` được đọc từ `backend/.env` khi khởi động và được kiểm tra trong `loadConfig()`. Tên database là `student-mart`; định dạng: `postgresql://USER:PASSWORD@HOST:5432/student-mart`. Các ký tự đặc biệt trong username/password cần URL-encode. Biến môi trường của process được ưu tiên hơn file `.env`. File `.env` và file nguồn credentials cục bộ `env-varibale.md` được Git ignore; `.env.example` chỉ chứa giá trị mẫu. Khi chạy backend, `DATABASE_URL` là bắt buộc và NestJS mở connection pool qua TypeORM.
 
-`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Unit test kiểm tra HTTP bằng Fastify injection và tắt kết nối database một cách tường minh. Account là entity đầu tiên; chưa có API đăng ký/đăng nhập.
+Auth API bắt buộc `AUTH_RATE_LIMIT_SECRET` ngẫu nhiên ít nhất 32 ký tự để tạo khóa HMAC của email trong bộ đếm login. Sau khi tạo `backend/.env`, chạy từ root để sinh và ghi secret trực tiếp vào file ignored, không in giá trị ra terminal (lệnh từ chối ghi nếu đã cấu hình):
+
+```powershell
+node -e "const fs=require('node:fs'),p='backend/.env';if(/^AUTH_RATE_LIMIT_SECRET=/m.test(fs.readFileSync(p,'utf8')))throw Error('Already configured');fs.appendFileSync(p,'\nAUTH_RATE_LIMIT_SECRET='+require('node:crypto').randomBytes(32).toString('hex')+'\n')"
+```
+
+Giữ secret riêng cho môi trường; không đưa vào `EXPO_PUBLIC_*`. Sau đó chạy `scripts/up.ps1` và khởi động API. Database CLI không cần khởi tạo AuthModule; API từ chối khởi động auth khi thiếu secret.
+
+`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Unit test kiểm tra HTTP bằng Fastify injection và tắt kết nối database một cách tường minh. Đã có API đăng ký, đăng nhập, danh tính hiện tại và thu hồi phiên.
+
+## Swagger UI — tài liệu và thử API
+
+Backend dùng `@nestjs/swagger` 11.x để phục vụ Swagger UI, `@fastify/static` 10.x (khớp peer dependency của NestJS Fastify adapter hiện tại) để phục vụ JS/CSS ngay từ backend và `yaml` 2.9.1 để đọc hợp đồng OpenAPI. Cấu hình theo [hướng dẫn chính thức NestJS](https://docs.nestjs.com/openapi/introduction). Dependency nằm trong `backend/package.json`, lockfile chung ở root; không cần cài Swagger CLI hay tải UI từ CDN.
+
+Cài đặt và chạy từ repository root:
+
+```powershell
+pnpm install --frozen-lockfile
+# Cấu hình backend/.env theo .env.example nếu chưa có, đặc biệt DATABASE_URL.
+.\scripts\up.ps1
+.\scripts\run.ps1 --backend
+```
+
+Lệnh tương đương để chạy riêng API: `pnpm --filter studentmart-backend start:dev`. Nếu PowerShell chặn `pnpm.ps1`, dùng `pnpm.cmd`. Chạy bản build bằng `pnpm --filter studentmart-backend build` rồi `pnpm --filter studentmart-backend start`.
+
+- UI: **http://localhost:3000/api/docs**.
+- OpenAPI JSON: http://localhost:3000/api/docs/openapi.json (có thể import vào Postman/Insomnia).
+- OpenAPI YAML: http://localhost:3000/api/docs/openapi.yaml.
+
+Nếu đổi PORT, thay 3000 bằng port đã cấu hình. Từ máy khác cùng LAN, thay localhost bằng IP máy chạy backend. Server trong Swagger dùng `/` nên request gửi về đúng host/port đang mở UI.
+
+Trong Swagger, mở `GET /health` rồi **Try it out → Execute** để kiểm tra server. Với `POST /api/v1/auth/register`, sửa JSON request và bấm Execute; UI hiển thị curl, status code, headers và response body. Dùng email test mới cho mỗi lần đăng ký; API lưu Account thật trong database đang cấu hình. Thành công trả 201, email trùng trả 409, input sai trả 400, vượt 5 lần thử/15 phút/IP trả 429. Đăng ký không cần token và không cấp phiên đăng nhập.
+
+Swagger chỉ hiển thị route đã đăng ký trong NestJS, hiện gồm health, register, login, logout và GET accounts/me. Schema/response lấy từ `docs/contracts/accounts.openapi.yaml`; các API dự kiến khác chưa xuất hiện. Khi thêm endpoint, đăng ký controller và bổ sung hợp đồng tương ứng. Thay file hợp đồng rồi restart dev server hoặc build lại. Build tự copy hợp đồng vào `backend/dist/shared/http/accounts.openapi.yaml` để bản build có thể chạy độc lập với thư mục docs nguồn. Không sửa trực tiếp file trong dist.
+
+Để thử đăng nhập: gọi `POST /api/v1/auth/login` với tài khoản đã đăng ký, nhập token từ response vào **Authorize** (scheme bearerSession), rồi gọi `GET /api/v1/accounts/me`. Kết quả phải là tài khoản sở hữu phiên. Dùng `POST /api/v1/auth/logout` để thu hồi phiên thử. Không đưa token/password vào log, issue, ảnh chụp hoặc tài liệu. Swagger không persist Authorization qua reload trình duyệt.
+
+Kiểm tra bằng `pnpm test`, `pnpm typecheck` và `pnpm --filter studentmart-backend build`. Ngày 2026-11-13: 54 contract test + 16 unit test PASS; smoke test HTTP của bản build kết nối PostgreSQL thật trả 200 cho UI, JS/CSS, JSON/YAML và health. OpenAPI chỉ liệt kê `/health` và `/api/v1/auth/register`.
+
+## API đăng ký — #87
+
+`POST /api/v1/auth/register` nhận JSON chỉ gồm `email`, `password`, `displayName`; xem [OpenAPI](../docs/contracts/accounts.openapi.yaml). Email được trim/lowercase, tên được trim, mật khẩu giữ nguyên. Giới hạn lần lượt là 254, 8–128 và 1–100 Unicode code point. Field ngoài whitelist (kể cả role/verify) trả `400 VALIDATION_ERROR`.
+
+Thành công trả `201 {account: ...}`, role `MEMBER`, trạng thái trường `UNVERIFIED`, các field hồ sơ chưa khai báo là `null`; không cấp phiên. DTO liệt kê rõ từng field và không chứa password/hash. Email trùng sau normalize trả `409 EMAIL_ALREADY_EXISTS`, kể cả hai request đồng thời. PostgreSQL enforce cả unique và CHECK email đã normalize.
+
+Response dùng `Cache-Control: no-store`, `X-Request-Id` do server tạo; lỗi có envelope `{error:{code,message,fields?,requestId}}` và không trả lỗi SQL/stack/input. Request JSON tối đa 16 KiB (`413` nếu vượt); content type không hỗ trợ trả `415`. Giới hạn đăng ký là 5 lần thử/15 phút/IP, tính cả request sai, vượt trả `429` cùng `Retry-After`. Bộ đếm hiện nằm trong memory của một process, tối đa 10.000 IP đang lưu; đầy trả `503`. Restart sẽ reset bộ đếm; cần store dùng chung trước khi chạy nhiều replica. Không bật trust proxy nên `X-Forwarded-For` không thay đổi IP được tính; khi thêm reverse proxy cần cấu hình trust theo hạ tầng thực tế.
+
+Xem [bằng chứng triển khai và kiểm tra #87](../docs/implementation/task-16-02-be-register.md).
+
+## API đăng nhập và phiên — #90
+
+`POST /api/v1/auth/login` nhận đúng `{email,password}`; email trim/lowercase, password giữ nguyên và có 8–128 Unicode code point. Backend kiểm tra scrypt theo policy hiện có (N=16384/r=8/p=1), so sánh timing-safe; email không tồn tại vẫn thực hiện dummy scrypt. Email không tồn tại và mật khẩu sai cùng trả `401 INVALID_CREDENTIALS`, không tạo phiên.
+
+Thành công trả `200 {account,session:{token,expiresAt}}`. Token opaque được sinh từ 32 random byte, base64url 43 ký tự; không phải JWT. Bảng `"AuthSession"` chỉ giữ SHA-256 digest, account FK, thời điểm tạo/hết hạn/thu hồi. Phiên hết hạn tuyệt đối sau 30 ngày; không refresh hay gia hạn trượt. Các response login/me/logout có `Cache-Control: no-store`; password, token/digest và restriction không được log hoặc trả trong DTO hồ sơ.
+
+`GET /api/v1/accounts/me` dùng `Authorization: Bearer TOKEN` để nạp account từ phiên server. Query/body accountId không quyết định danh tính. Token thiếu/sai/unknown/revoked trả `401 UNAUTHENTICATED`; phiên quá hạn trả `401 SESSION_EXPIRED`. Mỗi lần gọi nạp quyền account hiện tại. Không yêu cầu verify email trường; khi chưa có nguồn TASK-18, projection vẫn UNVERIFIED.
+
+`POST /api/v1/auth/logout` thu hồi đúng bearer được gửi và trả 204. Token đúng format nhưng unknown/expired/revoked vẫn trả 204; thiếu hoặc sai format trả 401. Endpoint này hỗ trợ cleanup nếu mobile ghi SecureStore thất bại và đổi tài khoản. Các luồng UX logout/offline đầy đủ vẫn thuộc TASK-16.05.
+
+Account bổ sung `login_disabled_at` nullable, mặc định null, `select:false`. Đây là nguồn hạn chế đăng nhập do server quản lý, không có trong register/update/profile DTO; tài khoản bị đặt timestamp trả `403 FORBIDDEN` khi login hoặc gọi me. Không suy luận hạn chế từ role MEMBER hay trạng thái verify. Module quản trị ở task sau chịu trách nhiệm thao tác hạn chế; ticket này không tạo admin API hoặc khóa tài khoản sau nhiều lần thử sai.
+
+Đặt secret ngẫu nhiên ít nhất 32 ký tự trong `backend/.env`:
+
+```dotenv
+AUTH_RATE_LIMIT_SECRET=replace-with-a-random-secret-of-at-least-32-characters
+```
+
+Đây là secret chỉ dùng phía server, không đặt `EXPO_PUBLIC_*` hoặc commit giá trị thật. API auth yêu cầu secret khi khởi động; CLI database không cần secret. Login giới hạn hai bucket độc lập: tối đa 5 lần thất bại/15 phút/IP và 5 lần thất bại/15 phút/HMAC(email normalize). Đạt một giới hạn trả 429 + `Retry-After` giây; request đang hash giữ chỗ để không vượt giới hạn khi chạy đồng thời. Thành công/lỗi database không tính là mật khẩu sai; lỗi credentials hoặc tài khoản bị hạn chế tính là lần thất bại. Không tin X-Forwarded-For mặc định.
+
+Bộ đếm dùng fixed window trong memory một process, giới hạn 20.000 bucket, đầy trả 503 và restart sẽ reset; trước khi chạy nhiều replica cần store dùng chung. Không lưu email thô trong khóa limiter. Secret HMAC thay đổi sẽ thay khóa email; không ảnh hưởng digest của phiên đang lưu trong database.
+
+Migration `1794622765393-AddAuthSessions.ts` được sinh bằng `scripts/add.ps1 AddAuthSessions`, review up/down rồi apply `scripts/up.ps1` vào `student-mart` ngày 2026-11-14. Up thêm bảng/index/FK RESTRICT/CHECK thời hạn, cột restriction nullable; không sửa dữ liệu Account cũ. Down xóa bảng phiên/cột mới (không thực hiện). `scripts/check.ps1` sau apply: không pending, schema khớp entity.
+
+Kiểm tra: `pnpm --filter studentmart-backend test` và `pnpm --filter studentmart-backend test:integration`. Tests bao phủ mật khẩu đúng/sai/unknown, digest-only, 30 ngày, me theo bearer, trường verify tùy chọn, expiry/revocation, restriction, logout idempotent, lỗi an toàn, không log credential và giới hạn thử/chạy đồng thời. Account test dùng UUID, session/account được cleanup đúng fixture; không reset database. Swagger tự nhận login/me/logout từ controller và dùng schema hợp đồng chung.
 
 ## Account và migration code first
 
@@ -44,7 +117,7 @@ Sau khi sửa entity, chạy `pnpm run migration:generate src/shared/database/mi
 
 Migration nằm ở `src/shared/database/migrations/`; lịch sử nằm trong bảng `typeorm_migrations`. Yêu cầu PostgreSQL 13+ cho `gen_random_uuid()`. Lệnh tạo database dùng database bảo trì `postgres`, cần quyền CREATEDB nếu `student-mart` chưa tồn tại. Khi database đã được cấp sẵn, chỉ cần `migration:run` và quyền DDL trong schema `public`.
 
-Integration test yêu cầu database đã migrate, kiểm tra lưu Account, UUID/timestamps, email unique, ẩn hash và schema khớp entity. Mọi dữ liệu test được đặt trong transaction và rollback; test không tự chạy migration.
+Integration test yêu cầu database đã migrate, kiểm tra lưu Account, UUID/timestamps, email unique, ẩn hash và schema khớp entity. Test service dùng transaction/rollback. Test HTTP đồng thời dùng connection riêng và cleanup đúng email UUID do test tạo; không reset dữ liệu khác hoặc tự chạy migration.
 
 ## Đặt code ở đâu?
 

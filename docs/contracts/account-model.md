@@ -85,6 +85,7 @@ Các object request dùng whitelist (`additionalProperties: false`); field khôn
 | Entity/bảng | Trường/constraint | Quy tắc |
 |---|---|---|
 | Account (đã có) | UUID id, email varchar(254) UNIQUE, password_hash text, display_name varchar(100), enum role, created_at/updated_at timestamptz | Giữ bảng `"Account"` và migration đã apply. MEMBER mặc định. Hash `select:false` vẫn không thay projection DTO |
+| Account (16.03) | login_disabled_at nullable timestamptz, nội bộ server, select:false | Null cho tài khoản được đăng nhập; khi được hệ thống vận hành đặt giá trị, login và API danh tính trả 403. Không nhận từ register/login, không nằm trong DTO, độc lập với xác thực email trường |
 | Account (bổ sung) | nullable declared_school_id UUID, area_id UUID, bio varchar(500), avatar_media_id UUID | FK tới lookup/media đã chốt; ON DELETE SET NULL cho profile refs; không xóa account khi xóa avatar |
 | AuthSession (mới) | UUID id, account_id UUID FK RESTRICT, token_hash char(64) UNIQUE, created_at/expires_at timestamptz, revoked_at nullable timestamptz | CHECK expires_at > created_at; revoked_at null hoặc >= created_at; index account_id, expires_at; không persist token thô |
 | School/Area (TASK-15/catalog) | UUID id, code UNIQUE, name, dữ liệu được duyệt | Giữ stable ID; không cascade xóa Account. Không seed tên/miền giả để vượt qua test |
