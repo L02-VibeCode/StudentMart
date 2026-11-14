@@ -2,7 +2,7 @@ import "reflect-metadata";
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import { DataSource, In } from "typeorm";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { Account } from "../../src/modules/accounts/business/account.entity";
 import { AccountsService } from "../../src/modules/accounts/business/accounts.service";
 import { AuthSession } from "../../src/modules/auth/business/auth-session.entity";
@@ -67,7 +67,10 @@ it("connects mobile login to HTTP/PostgreSQL, persists only credential fields, a
     await auth.endSession();
     expect(records.size).toBe(0);
     expect(auth.getSnapshot().account).toBeNull();
-    expect((await sessions.findOneByOrFail({ accountId: a.id })).revokedAt).toBeInstanceOf(Date);
+    // Local logout completes independently; wait for the separate HTTP revocation before inspecting it.
+    await vi.waitFor(async () => {
+      expect((await sessions.findOneByOrFail({ accountId: a.id })).revokedAt).toBeInstanceOf(Date);
+    });
 
     const wrong = createLoginModel(auth.login, a.email);
     wrong.setField("password", "wrong-password");

@@ -7,6 +7,7 @@ import { LoginRateLimiter } from "./business/login-rate-limiter";
 import { AuthController } from "./presentation/auth.controller";
 import { SessionGuard } from "./presentation/session.guard";
 import { ResourceAccessGuard } from "./presentation/resource-access.guard";
+import { LOGOUT_CLEANUP_HOOKS, type LogoutCleanupHook } from "./business/logout-cleanup";
 
 @Module({})
 export class AuthModule {
@@ -15,12 +16,13 @@ export class AuthModule {
     return {
       module: AuthModule, controllers: [AuthController],
       providers: [
-        { provide: AuthService, inject: [DataSource], useFactory: (source: DataSource) => new AuthService(source, new LoginRateLimiter(config.AUTH_RATE_LIMIT_SECRET!)) },
+        { provide: LOGOUT_CLEANUP_HOOKS, useValue: [] },
+        { provide: AuthService, inject: [DataSource, LOGOUT_CLEANUP_HOOKS], useFactory: (source: DataSource, hooks: LogoutCleanupHook[]) => new AuthService(source, new LoginRateLimiter(config.AUTH_RATE_LIMIT_SECRET!), hooks) },
         SessionGuard, ResourceAccessGuard,
         { provide: APP_GUARD, useExisting: SessionGuard },
         { provide: APP_GUARD, useExisting: ResourceAccessGuard },
       ],
-      exports: [AuthService],
+      exports: [AuthService, LOGOUT_CLEANUP_HOOKS],
     };
   }
 }

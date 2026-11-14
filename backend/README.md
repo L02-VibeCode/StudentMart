@@ -79,7 +79,17 @@ Thành công trả `200 {account,session:{token,expiresAt}}`. Token opaque đư�
 
 `GET /api/v1/accounts/me` dùng `Authorization: Bearer TOKEN` để nạp account từ phiên server. Query/body accountId không quyết định danh tính. Token thiếu/sai/unknown/revoked trả `401 UNAUTHENTICATED`; phiên quá hạn trả `401 SESSION_EXPIRED`. Mỗi lần gọi nạp quyền account hiện tại. Không yêu cầu verify email trường; khi chưa có nguồn TASK-18, projection vẫn UNVERIFIED.
 
-`POST /api/v1/auth/logout` thu hồi đúng bearer được gửi và trả 204. Token đúng format nhưng unknown/expired/revoked vẫn trả 204; thiếu hoặc sai format trả 401. Endpoint này hỗ trợ cleanup nếu mobile ghi SecureStore thất bại và đổi tài khoản. Các luồng UX logout/offline đầy đủ vẫn thuộc TASK-16.05.
+`POST /api/v1/auth/logout` thu hồi đúng bearer được gửi và trả 204 khi cleanup server đã hoàn tất. Token đúng format nhưng unknown/expired/revoked vẫn xử lý idempotent; thiếu hoặc sai format trả 401. Không dùng accountId/sessionId do client tự khai để chọn phiên cần thu hồi. Một phiên khác của cùng Account hoặc tài khoản khác tiếp tục hoạt động; Account và dữ liệu người dùng không bị xóa.
+
+### Logout và điểm tích hợp — #96
+
+`LogoutCleanupHook.onSessionRevoked({sessionId,accountId})` là cổng server cho TASK-19 tháo push binding theo phiên và realtime disconnect nếu hệ thống đó đã có. `LOGOUT_CLEANUP_HOOKS` được inject vào AuthService qua AuthModule, mặc định là mảng rỗng vì chưa có push binding/chat realtime production. Khi TASK-19/chat triển khai, thay provider này bằng các adapter thực; mỗi adapter phải idempotent, chỉ tác động đúng session/account từ database, không dựa body/query/role client hoặc tháo toàn bộ thiết bị/tài khoản khác.
+
+Service commit `revoked_at` trước khi gọi các hook, không giữ transaction qua dịch vụ ngoài. Mọi hook đều được thử; nếu hook lỗi, trả `503 SERVICE_UNAVAILABLE` an toàn và token vẫn bị từ chối ở API riêng. Gọi logout lại với cùng token đã revoke sẽ thử lại cleanup; timestamp revoke không bị ghi lại. Unknown bearer đúng format không có resource để cleanup và trả 204. Không log token, provider error hoặc dữ liệu binding.
+
+Nếu client offline, backend chưa nhận request nên phiên server còn hiệu lực đến khi thu hồi/hết hạn. Mobile phải xóa credential/private state cục bộ và không tuyên bố server revoke đã hoàn tất. Nếu request timeout/503, kết quả toàn bộ cleanup chưa được xác nhận dù phiên có thể đã revoke. Hiện chưa có durable cleanup queue/outbox hoặc adapter push/realtime thật; crash sau revoke hoặc lỗi hook chỉ được bù qua lần gọi logout tiếp theo khi còn token. TASK-19 cần bổ sung cơ chế retry/durability phù hợp với nguồn binding thực, không được dùng hook hiện tại làm bằng chứng push/chat đã ngắt thật.
+
+Không thay entity/schema cho #96; giữ ba migration và synchronize/migrationsRun=false. Test `backend/tests/integration/logout.test.ts` dùng PostgreSQL thật với UUID account/session riêng: current-session-only, token cũ401, phiên A khác/B vẫn200, repeat/unknown/expired idempotent, ignore client IDs, hook failure không rollback revoke và retry đúng scope. Dữ liệu test được cleanup, không reset dữ liệu thật.
 
 Account bổ sung `login_disabled_at` nullable, mặc định null, `select:false`. Đây là nguồn hạn chế đăng nhập do server quản lý, không có trong register/update/profile DTO; tài khoản bị đặt timestamp trả `403 FORBIDDEN` khi login hoặc gọi me. Không suy luận hạn chế từ role MEMBER hay trạng thái verify. Module quản trị ở task sau chịu trách nhiệm thao tác hạn chế; ticket này không tạo admin API hoặc khóa tài khoản sau nhiều lần thử sai.
 
