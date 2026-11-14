@@ -4,7 +4,7 @@ import type { ListingGateway } from "../features/listings/business/listing-gatew
 
 export type ReturnIntent = { action: "contactListing"; listingId: string } | { action: "createListing" } | { action: "openPrivateProfile" };
 export type Route = { name: "browse" } | { name: "listing"; listingId: string; contactReady?: boolean }
-  | { name: "compose" } | { name: "profile" } | { name: "recovery" }
+  | { name: "compose" } | { name: "profile" } | { name: "profile-edit" } | { name: "profile-verification" } | { name: "recovery" }
   | { name: "login"; email: string; created: boolean } | { name: "register" };
 const publicOrigin = (route: Route): Route => route.name === "listing" ? { name: "listing", listingId: route.listingId } : { name: "browse" };
 
@@ -76,9 +76,9 @@ export function createSessionNavigation(auth: AuthCoordinator, listings: Listing
       update({ route: { name: "login", email: "", created: false } });
     } else if (["restricted", "offline", "blocked"].includes(current.status) && !current.busy && state.intent) {
       update({ route: { name: "recovery" } });
-    } else if (["profile", "compose"].includes(state.route.name)) {
+    } else if (["profile", "profile-edit", "profile-verification", "compose"].includes(state.route.name)) {
       generation++;
-      update({ intent: state.route.name === "profile" ? { action: "openPrivateProfile" } : { action: "createListing" },
+      update({ intent: state.route.name !== "compose" ? { action: "openPrivateProfile" } : { action: "createListing" },
         route: current.status === "guest" ? { name: "login", email: "", created: false } : { name: "recovery" }, resuming: false });
     }
   });
@@ -102,6 +102,11 @@ export function createSessionNavigation(auth: AuthCoordinator, listings: Listing
     register() { update({ route: { name: "register" }, message: "" }); },
     cancelLogin() { generation++; update({ route: origin, intent: null, resuming: false, message: "" }); },
     recovery() { update({ route: { name: "recovery" } }); },
+    profileDestination(destination: "edit" | "verification") {
+      if (auth.getSnapshot().status !== "authenticated" || state.route.name !== "profile") return;
+      generation++;
+      update({ route: { name: destination === "edit" ? "profile-edit" : "profile-verification" }, intent: null, resuming: false, message: "" });
+    },
     dispose() { generation++; unsubscribe(); listeners.clear(); },
   };
 }

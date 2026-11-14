@@ -17,12 +17,16 @@ import { unavailableListings } from "./src/features/listings/business/listing-ga
 import { BrowseScreen, ListingScreen } from "./src/features/listings/presentation/listing-screens";
 import type { LoginInput } from "./src/features/auth/business/auth";
 import { createAccountLogoutResources } from "./src/features/auth/business/account-logout-resources";
+import { createProfileRepository } from "./src/features/profile/data/profile-repository";
+import { createProfileModel } from "./src/features/profile/business/profile-model";
 
 const register = createRegistrationApi(API_URL);
 // Future account-scoped cache/chat/push adapters register here; public data stays outside this registry.
 const accountResources = createAccountLogoutResources();
 const auth = createAuthCoordinator(createAuthApi(API_URL), credentialStore, Date.now, accountResources);
 const navigation = createSessionNavigation(auth, unavailableListings);
+const profile = createProfileModel(createProfileRepository(auth), auth);
+accountResources.register({ async clearPrivate() { profile.reset(); } });
 
 async function cancelLogin() {
   const pendingLogin = auth.getSnapshot().status === "guest" && auth.getSnapshot().busy;
@@ -48,6 +52,7 @@ export default function App() {
     const back = BackHandler.addEventListener("hardwareBackPress", () => {
       const route = navigation.getSnapshot().route.name;
       if (["login", "register"].includes(route)) { void cancelLogin(); return true; }
+      if (["profile-edit", "profile-verification"].includes(route)) { void navigation.request({ action: "openPrivateProfile" }); return true; }
       if (route !== "browse") { navigation.browse(); return true; }
       return false;
     });
@@ -60,7 +65,15 @@ export default function App() {
   } else if (nav.resuming) {
     screen = <AuthLayout title="Đang xác nhận quyền truy cập" subtitle="Kiểm tra lại phiên và ngữ cảnh trước khi tiếp tục."><ActivityIndicator /><AuthButton label="Hủy, quay lại" onPress={navigation.cancelLogin} /></AuthLayout>;
   } else if (route.name === "profile" && state.status === "authenticated" && state.account) {
-    screen = <AccountScreen key={state.account.id} account={state.account} onEndSession={async () => { navigation.resetForLogout(); await auth.endSession(); }} />;
+    screen = <AccountScreen key={state.account.id} model={profile} onBrowse={navigation.browse}
+      onEdit={() => navigation.profileDestination("edit")} onVerify={() => navigation.profileDestination("verification")}
+      onEndSession={async () => { navigation.resetForLogout(); await auth.endSession(); }} />;
+  } else if (["profile-edit", "profile-verification"].includes(route.name) && state.status === "authenticated" && state.account) {
+    screen = <AuthLayout title={route.name === "profile-edit" ? "Chỉnh sửa hồ sơ" : "Xác thực email trường"}
+      subtitle={route.name === "profile-edit" ? "Chức năng chỉnh sửa hồ sơ chưa sẵn sàng. Thông tin hiện tại của bạn vẫn được giữ nguyên."
+        : "Xác thực email trường là tùy chọn và chưa sẵn sàng trên phiên bản này. Bạn vẫn có thể dùng các chức năng được phép khi chưa xác thực."}>
+      <AuthButton label="Quay về hồ sơ" onPress={() => { void navigation.request({ action: "openPrivateProfile" }); }} />
+    </AuthLayout>;
   } else if (route.name === "compose" && state.status === "authenticated") {
     screen = <AuthLayout title="Đăng tin" subtitle="Chức năng đang hoàn thiện. Bạn có thể quay về khám phá."><AuthButton label="Quay lại" onPress={navigation.browse} /></AuthLayout>;
   } else if (route.name === "register") {
