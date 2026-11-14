@@ -21,6 +21,7 @@ Phân công BE/API/schema → backend-dev + typeorm-migrations; mobile/UI → fr
 
 ## Điểm cập nhật dự án
 
+- `.agents/` và `.github/` được giữ local, ignore và không track trong Git theo yêu cầu người dùng. Không force-add các thư mục này. Nếu checkout mới không có skill local, áp dụng quy trình trong file này và báo giới hạn thay vì giả đã đọc skill. GitHub Actions không được cung cấp bởi source hiện tại; chạy và ghi bằng chứng kiểm tra local, không coi thiếu CI là đã pass.
 - Repository: `L02-VibeCode/StudentMart`.
 - GitHub Project: https://github.com/orgs/L02-VibeCode/projects/1.
 - Phân biệt trạng thái workflow **Review** với tiêu chí đã nghiệm thu. Issue/PR phải ghi phần thiếu, không dùng Review để ngụ ý đã đạt toàn bộ AC.

@@ -34,6 +34,10 @@ Giữ secret riêng cho môi trường; không đưa vào `EXPO_PUBLIC_*`. Sau �
 
 ## Swagger UI — tài liệu và thử API
 
+TASK-16.06 (#98/#99): `GET /api/v1/accounts/me` always returns the profile of the current bearer session. A client-supplied accountId cannot select another account. It reads current stored displayName/bio and sends `Cache-Control: no-store`; missing bio is null. New migration `AddAccountBio1794646099502` adds nullable `Account.bio varchar(500)`; run `scripts/up.ps1` before starting the updated API. Up preserves existing rows; down drops bio and would lose that column's values, so it is not part of normal setup.
+
+Avatar, declared school, area and verified-school sources are pending the catalog/media/TASK-18 owners. Their response fields are null / UNVERIFIED until those real sources are integrated. No fake school dataset, avatar URL, verification badge or listing count is returned. GET is implemented; profile edit/avatar/verification endpoints remain outside this ticket. Run `pnpm --filter studentmart-backend exec vitest run tests/integration/profile.test.ts` against the already-migrated configured student-mart database for scoped HTTP/security/projection checks.
+
 Backend dùng `@nestjs/swagger` 11.x để phục vụ Swagger UI, `@fastify/static` 10.x (khớp peer dependency của NestJS Fastify adapter hiện tại) để phục vụ JS/CSS ngay từ backend và `yaml` 2.9.1 để đọc hợp đồng OpenAPI. Cấu hình theo [hướng dẫn chính thức NestJS](https://docs.nestjs.com/openapi/introduction). Dependency nằm trong `backend/package.json`, lockfile chung ở root; không cần cài Swagger CLI hay tải UI từ CDN.
 
 Cài đặt và chạy từ repository root:

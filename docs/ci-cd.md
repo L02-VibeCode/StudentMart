@@ -1,5 +1,7 @@
 # GitHub Actions CI/CD — #116
 
+> Current status (#98): the user requested that all of `.github/` remain local-only and untracked. The workflows described below are historical/local references and are no longer shipped in this branch. GitHub Actions PR checks and manual CD cannot be assumed to run after this change. Existing historical runs remain on GitHub. Run typecheck, tests, backend build/schema/integration and Expo checks locally. Docker/EAS files outside `.github/` remain available.
+
 Phạm vi đã xác nhận: backend NestJS trên VPS/Docker; mobile production Android/iOS qua Expo EAS, **không tự submit store**. Người dùng hiện chưa có VPS/domain hoặc EAS project. Vì vậy CI chạy thực tế trên GitHub, còn CD được chuẩn bị cấu hình và chặn khi thiếu hạ tầng/credentials/approval; chưa có bằng chứng deploy hoặc EAS production build thành công.
 
 ## CI kiểm tra PR

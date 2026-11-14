@@ -27,6 +27,9 @@ export class Account {
   @Column({ name: "display_name", type: "varchar", length: 100 })
   displayName!: string;
 
+  @Column({ type: "varchar", length: 500, nullable: true })
+  bio!: string | null;
+
   @Column({
     type: "enum",
     enum: AccountRole,
