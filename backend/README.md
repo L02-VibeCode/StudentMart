@@ -186,3 +186,7 @@ Replacing/deleting queues the prior provider public ID atomically in AvatarClean
 Migration AddAccountAvatar1794669939674 adds nullable avatar URL/internal provider reference and the cleanup table. Review up/down; down removes references/queued intent and is destructive to those values. No down was executed. Missing real Cloudinary credentials means adapter-backed HTTP/PG tests do not establish a successful external upload/delete; configure and smoke-test separately.
 
 Official references: [Node upload](https://cloudinary.com/documentation/node_image_and_video_upload), [SDK configuration](https://cloudinary.com/documentation/node_integration), [delete assets](https://cloudinary.com/documentation/delete_assets). No provider credentials or remote URLs supplied by the user are logged.
+
+### Avatar diagnostic verification (2026-11-14)
+
+A diagnostic smoke test with the configured local Cloudinary account passed against both a fresh production bootstrap and the already-running API on port3000: login200, multipart WebP upload200, HTTPS image delivery200, delete204 and zero pending cleanup for the temporary account. A generated270865-byte PNG also uploaded200 and deleted204 on port3000, confirming multipart uploads are not capped by the16384-byte JSON body limit. All test accounts/sessions and generated remote assets were cleaned up. No credentials or provider IDs were printed. This verifies server/provider behavior from this machine, not the phone image picker, LAN reachability or a particular user-selected file.
