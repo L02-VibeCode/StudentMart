@@ -1,5 +1,13 @@
 # TASK-16.01 — Bằng chứng kiểm chứng contract
 
+## Runtime update — TASK-16.06 (#98/#99), 2026-11-14
+
+The historical #83 checks below remain design-time evidence. Current runtime now includes registration, login, session guards, logout and `GET /api/v1/accounts/me`. The self-profile response reads the current authenticated Account row, including nullable stored `bio`; it is not a client-selected account lookup. Migration `AddAccountBio1794646099502` adds only nullable `Account.bio varchar(500)` and preserves existing accounts. Rollback would drop this column and its contents; it has not been executed.
+
+Catalog School/Area, MediaAsset and school-email verification are not implemented sources yet. Consequently avatarUrl/declaredSchool/area are null, and schoolVerification remains UNVERIFIED with null school/verifiedAt. No hardcoded school/avatar/counts become real profile data. Populated values from those providers remain pending their owning tasks. GET does not implement profile editing, avatar upload or verification.
+
+Runtime profile security/projection checks live in `backend/tests/integration/profile.test.ts`; cross-stack evidence and device/design limitations are tracked in the TASK-16.06 implementation audit. Do not treat the original schema-only fixtures below as real catalog/media data.
+
 Ngày kiểm tra: 2026-11-13 (Asia/Saigon). Phạm vi #83, BE #84 và FE #85; baseline bắt đầu từ `origin/main` commit `e9d79261`. Thực hiện trên Node 22.23.4, pnpm 10.34.3, Windows PowerShell. Sub-agent `frontend-dev` soạn và đối chiếu phần contract mobile với OpenAPI/model; đây là review kỹ thuật giữa các agent, chưa thay review của người phụ trách sản phẩm.
 
 ## Kết quả đã chạy

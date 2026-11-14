@@ -6,6 +6,8 @@ Nguồn máy đọc là [accounts.openapi.yaml](accounts.openapi.yaml); quy tắ
 
 ## Hiện trạng được kiểm tra
 
+Runtime note (TASK-16.06 #98/#99, 2026-11-14): the baseline snapshot below describes #83, not the current implementation. Auth/session/registration/logout now exist. GET accounts/me projects current session identity and nullable persisted Account.bio. Migration AddAccountBio1794646099502 adds bio only. School/Area lookup, MediaAsset/avatar and TASK-18 verification have no runtime source yet: return null/UNVERIFIED per contract, without fabricated provider data. Profile edit remains a subsequent ticket; no PATCH implementation is implied here.
+
 Nhánh bắt đầu từ `origin/main` sau PR #113. Backend có entity `Account`, `AccountsService.create()`, migration `CreateAccount1794549817255` và health endpoint. Mobile hiện là Expo shell có kiểm tra `/health`. Chưa có auth controller, session entity, profile fields, lookup seed hay SecureStore dependency. PR #81 là nguồn tham khảo mobile riêng, không được xem là code đã merge/đạt nghiệm thu.
 
 `PublicAccount = Omit<Account, 'passwordHash'>` hiện tại trong service là kiểu nội bộ, **không phải public API DTO** vì vẫn chứa email/role. Các ticket triển khai phải dùng projection whitelist rõ ràng trong OpenAPI, không trả entity trực tiếp.

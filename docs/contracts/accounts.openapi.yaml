@@ -135,6 +135,12 @@ paths:
       operationId: getMyAccount
       tags: [Accounts]
       summary: Resolve current private profile from the verified session
+      description: >-
+        Implemented by TASK-16.06 using the current Account row resolved from the bearer
+        session. Returns stored bio (nullable); client accountId parameters never choose
+        another identity. Catalog/media sources are not yet integrated, so declaredSchool,
+        area and avatarUrl remain null. Until TASK-18 exists, schoolVerification is
+        UNVERIFIED with school/verifiedAt null. No listing statistics are fabricated.
       responses:
         '200':
           $ref: '#/components/responses/PrivateAccount'
