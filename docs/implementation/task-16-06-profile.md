@@ -59,3 +59,14 @@ Theo yêu cầu người dùng, `.agents/` và `.github/` bị loại khỏi Git
 - [ ] Logout A → login B; Back/gesture không mở hồ sơ A; app foreground kiểm tra lại phiên.
 - [ ] Kiểm tra chữ tiếng Việt, font scaling, safe area, vùng chạm và screen reader trên Android/iOS.
 - [ ] Đối chiếu ảnh thiết kế đã duyệt với màn hình chạy thật; kiểm tra các provider/domain thực khi dependency sẵn sàng.
+
+## Final local verification (2026-11-14)
+
+- `pnpm.cmd typecheck`: PASS for mobile/backend.
+- `pnpm.cmd test`: PASS: 54 contract + 20 backend unit + 71 mobile unit = 145 tests.
+- `pnpm.cmd --filter studentmart-backend test:integration`: PASS: 20 tests across 11 files, real HTTP/PostgreSQL.
+- Backend build/schema check: PASS (BE verification); 4 applied migrations, none pending, entity/schema match.
+- Expo dependency check: PASS; Android/iOS export: PASS. No dependencies added.
+- `git ls-files -- .agents .github`: empty; recursive ignore checks PASS; original files still exist locally.
+
+All source is committed on `feat/98-current-profile`. The PR awaits user review/approval; issues remain open with the dependency/native acceptance limits above. No automatic CI is claimed because all `.github/` files are excluded at the user request.
