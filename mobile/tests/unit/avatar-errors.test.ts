@@ -15,6 +15,7 @@ async function authFixture() {
   await auth.login({ email: a.email, password: "password" });
   return auth;
 }
+function createBody(asset: import("../../src/features/profile/business/avatar-model").AvatarAsset) { const body = new FormData(); body.append("file", { uri: asset.uri, name: asset.name, type: asset.mimeType } as unknown as Blob); return body; }
 function nativeFormDataFixture() {
   class NativeFormData { entries: unknown[][] = []; append(...entry: unknown[]) { this.entries.push(entry); } }
   vi.stubGlobal("FormData", NativeFormData);
@@ -28,7 +29,7 @@ it.each([[413, "PAYLOAD_TOO_LARGE", "5 MiB"], [415, "UNSUPPORTED_MEDIA_TYPE", "J
   nativeFormDataFixture();
   const auth = await authFixture();
   const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { message: "provider-secret-debug-data" } }), { status }));
-  const repository = createAvatarRepository("https://api.example.invalid", auth, request);
+  const repository = createAvatarRepository("https://api.example.invalid", auth, request, createBody);
   const model = createAvatarModel(repository, auth, async () => asset);
   await model.choose(); await model.upload();
   expect(model.getSnapshot().message).toContain(message);
@@ -45,7 +46,7 @@ it.each([[413, "PAYLOAD_TOO_LARGE", "5 MiB"], [415, "UNSUPPORTED_MEDIA_TYPE", "J
 });
 it("keeps the native network failure distinguishable from provider failure", async () => {
   nativeFormDataFixture(); const auth = await authFixture();
-  const repository = createAvatarRepository("https://api.example.invalid", auth, vi.fn().mockRejectedValue(new TypeError("network failed")));
+  const repository = createAvatarRepository("https://api.example.invalid", auth, vi.fn().mockRejectedValue(new TypeError("network failed")), createBody);
   await expect(repository.upload(asset)).rejects.toBeInstanceOf(AuthError);
   await expect(repository.upload(asset)).rejects.toMatchObject({ code: "NETWORK_ERROR" });
 });

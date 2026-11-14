@@ -1,5 +1,5 @@
 import { createAvatarModel } from "./src/features/profile/business/avatar-model";
-import { createAvatarRepository } from "./src/features/profile/data/avatar-repository";
+import { createNativeAvatarRepository } from "./src/features/profile/data/native-avatar-repository";
 import { pickAvatar } from "./src/features/profile/data/native-image-picker";
 import { ProfileEditScreen } from "./src/features/profile/presentation/profile-edit-screen";
 import { createProfileEditModel } from "./src/features/profile/business/profile-edit-model";
@@ -31,7 +31,7 @@ const register = createRegistrationApi(API_URL);
 const accountResources = createAccountLogoutResources();
 const auth = createAuthCoordinator(createAuthApi(API_URL), credentialStore, Date.now, accountResources);
 const navigation = createSessionNavigation(auth, unavailableListings);
-const avatar = createAvatarModel(createAvatarRepository(API_URL, auth), auth, pickAvatar);
+const avatar = createAvatarModel(createNativeAvatarRepository(API_URL, auth), auth, pickAvatar);
 const profileEdit = createProfileEditModel(createProfileEditRepository(API_URL, auth), auth);
 const profile = createProfileModel(createProfileRepository(auth), auth);
 accountResources.register({ async clearPrivate() { profile.reset(); profileEdit.reset(); avatar.reset(); } });

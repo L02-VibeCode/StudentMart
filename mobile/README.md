@@ -83,3 +83,9 @@ Avatar selection uses `expo-image-picker ~58.0.10`, installed with `pnpm --filte
 Tests use injected picker/repository adapters and do not replace native permission/cancel/file/upload/Back checks on Android/iOS. Expo Doctor and bundle export validate configuration/buildability only. Provider end-to-end requires the backend Cloudinary configuration.
 
 Avatar troubleshooting: after picking a new photo, use the dedicated upload button; Save changes only saves profile text. The screen previews the pending selection. Safe errors distinguish the 5 MiB limit, unsupported/invalid image, unavailable storage service, and network timeout without displaying provider internals. Missing picker MIME metadata can be inferred from a supported JPEG/PNG/WebP file extension; HEIC is not relabeled as JPEG. The backend remains authoritative for actual image content.
+
+### SDK 58 avatar transport fix
+
+Expo SDK 58 installs `expo/fetch` as the default global fetch unless explicitly configured otherwise. Its multipart encoder rejects the legacy plain `{uri,name,type}` object, even if TypeScript casts it to Blob. Avatar production wiring now explicitly pairs `expo/fetch` with an actual `File` from `expo-file-system ~58.0.13`, matching [Expo FileSystem upload guidance](https://docs.expo.dev/versions/v58.0.0/sdk/filesystem/#uploading-files-using-expofetch). It validates local file existence/size before upload, sends the file bytes without base64, and lets Expo generate the multipart boundary.
+
+Errors now distinguish a missing local image (choose again), an immediate transport failure, and a real 30-second deadline. A deadline does not prove server-side rollback; reopen the profile before deciding whether retry is needed. After updating dependencies, rebuild existing custom development clients; Expo Go must support SDK 58. Native phone verification is still required.
