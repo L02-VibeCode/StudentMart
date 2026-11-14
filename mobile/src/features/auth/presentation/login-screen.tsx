@@ -5,7 +5,7 @@ import { createLoginModel } from "./login-model";
 import type { LoginInput } from "../business/auth";
 import { ConnectionCheck } from "../../../shared/presentation/connection-check";
 
-export function LoginScreen({ email, created, login, onRegister, notice = "" }: { email: string; created: boolean; login: (input: LoginInput) => Promise<void>; onRegister: () => void; notice?: string }) {
+export function LoginScreen({ email, created, login, onRegister, onCancel, notice = "" }: { email: string; created: boolean; login: (input: LoginInput) => Promise<void>; onRegister: () => void; onCancel?: () => void; notice?: string }) {
   const [model] = useState(() => createLoginModel(login, email));
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
   const [clock, setClock] = useState(Date.now);
@@ -28,6 +28,7 @@ export function LoginScreen({ email, created, login, onRegister, notice = "" }: 
     <Text style={styles.hint}>Bạn vẫn đăng nhập được khi chưa xác thực email trường.</Text>
     <AuthButton label={state.submitting ? "Đang đăng nhập…" : retrySeconds ? `Thử lại sau ${retrySeconds}s` : "Đăng nhập"} loading={state.submitting} disabled={retrySeconds > 0} onPress={() => { void model.submit(); }} />
     <View style={styles.footer}><Text style={styles.footerText}>Chưa có tài khoản?</Text><Pressable onPress={onRegister} disabled={state.submitting} accessibilityRole="button" accessibilityState={{ disabled: state.submitting }} style={styles.textButton}><Text style={styles.link}>Đăng ký ngay</Text></Pressable></View>
+    {onCancel && <AuthButton label="Hủy đăng nhập, quay lại" onPress={onCancel} />}
     {__DEV__ && <ConnectionCheck />}
   </AuthLayout>;
 }

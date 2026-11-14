@@ -11,7 +11,7 @@ export type LoginInput = { email: string; password: string };
 export type LoginResult = { account: PrivateAccount; session: { token: string; expiresAt: string } };
 export type AuthApi = {
   login(input: LoginInput): Promise<LoginResult>;
-  me(token: string): Promise<PrivateAccount>;
+  me(token: string, signal?: AbortSignal): Promise<PrivateAccount>;
   logout(token: string): Promise<void>;
 };
 export type CredentialStore = { read(): Promise<Credential | null>; write(value: Credential): Promise<void>; clear(): Promise<void> };
