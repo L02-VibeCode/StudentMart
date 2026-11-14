@@ -66,3 +66,14 @@ Schema: task sử dụng Account/AuthSession hiện có. Không tạo migration 
 - [ ] Disconnect chat thật và tháo push binding/provider/device thật ở TASK-19; mock/export không chứng minh push đã dừng.
 
 Những phần chưa có nguồn/provider không được thay bằng demo để đánh dấu đạt. PR chờ người dùng review/approve, không bật auto-merge.
+
+## Final automated verification
+
+- `pnpm typecheck`: PASS (backend/mobile).
+- `pnpm test`: PASS, 54 contract + 20 backend unit + 63 mobile unit = 137 tests.
+- Backend HTTP/PostgreSQL integration: PASS, 16 tests across 9 files.
+- Backend build and database schema check: PASS, 3 applied migrations, none pending; no schema change for this task.
+- Expo dependency check and Android/iOS export: PASS.
+- Skill validator: PASS for ticket-delivery, frontend-design and typeorm-migrations.
+
+These automated checks do not replace the native/provider checklist above. GitHub Actions results are linked from the PR.
