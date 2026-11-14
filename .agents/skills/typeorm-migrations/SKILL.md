@@ -48,4 +48,3 @@ Chạy typecheck/build và test theo ảnh hưởng. Integration test phải gi�
 ## Nhận công việc từ ticket
 
 Khi được giao #ticketid hoặc sub-ticket, đọc ../ticket-delivery/SKILL.md và root AGENTS.md để khám phá quan hệ, phân công và bàn giao. Agent con chỉ xử lý ownership được giao trên nhánh chung; báo AC/test/giới hạn cho root, không tự tạo PR/merge hoặc đổi trạng thái ngoài phân công. Skill này vẫn chịu trách nhiệm chuyên môn nêu trên.
-
