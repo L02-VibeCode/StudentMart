@@ -1,6 +1,10 @@
 import "reflect-metadata";
 import "dotenv/config";
 import { createHash, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import Ajv from "ajv";
+import addFormats from "ajv-formats";
+import { parse } from "yaml";
 import { DataSource } from "typeorm";
 import { expect, it, vi } from "vitest";
 import { Account } from "../../src/modules/accounts/business/account.entity";
@@ -9,6 +13,13 @@ import { AuthSession } from "../../src/modules/auth/business/auth-session.entity
 import { loadConfig } from "../../src/shared/config/env";
 import { databaseOptions } from "../../src/shared/database/database-options";
 import { authApp } from "../support/auth-app";
+
+const ajv = new Ajv({ strict: false, allErrors: true });
+addFormats(ajv);
+ajv.addSchema(parse(readFileSync("../docs/contracts/accounts.openapi.yaml", "utf8")), "account-contract");
+const validateLogin = ajv.getSchema("account-contract#/components/schemas/LoginResponse")!;
+const validateMe = ajv.getSchema("account-contract#/components/schemas/AccountResponse")!;
+const validateError = ajv.getSchema("account-contract#/components/schemas/ErrorEnvelope")!;
 
 async function fixture() {
   const config = loadConfig();
@@ -34,6 +45,7 @@ it("creates digest-only 30-day sessions, resolves current identity from bearer, 
     expect(response.statusCode).toBe(200);
     expect(response.headers["cache-control"]).toBe("no-store");
     const body = response.json();
+    expect(validateLogin(body), JSON.stringify(validateLogin.errors)).toBe(true);
     expect(body.account).toMatchObject({ id: account.id, email: account.email, role: "MEMBER", schoolVerification: { status: "UNVERIFIED" } });
     expect(body.session.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(response.body).not.toMatch(/password|tokenHash|loginDisabled/);
@@ -44,6 +56,7 @@ it("creates digest-only 30-day sessions, resolves current identity from bearer, 
     expect(stored.expiresAt.getTime() - stored.createdAt.getTime()).toBe(30 * 86400000);
     const current = await app.inject({ method: "GET", url: `/api/v1/accounts/me?accountId=${randomUUID()}`, headers: { authorization: `Bearer ${body.session.token}` } });
     expect(current.statusCode).toBe(200);
+    expect(validateMe(current.json()), JSON.stringify(validateMe.errors)).toBe(true);
     expect(current.json().account).toEqual(body.account);
     expect(current.headers["cache-control"]).toBe("no-store");
     expect(current.body).not.toMatch(/password|token|loginDisabled/);
@@ -51,6 +64,7 @@ it("creates digest-only 30-day sessions, resolves current identity from bearer, 
     const unknown = await app.inject({ method: "POST", url: "/api/v1/auth/login", payload: { email: `unknown-${randomUUID()}@example.invalid`, password: "wrong-password" } });
     expect(incorrect.statusCode).toBe(401);
     expect(unknown.statusCode).toBe(401);
+    expect(validateError(incorrect.json()), JSON.stringify(validateError.errors)).toBe(true);
     expect(incorrect.json().error).toMatchObject({ code: "INVALID_CREDENTIALS", message: unknown.json().error.message });
     expect(await source.getRepository(AuthSession).countBy({ accountId: account.id })).toBe(1);
     const output = logs.flatMap(log => log.mock.calls).flat().map(value => typeof value === "string" ? value : JSON.stringify(value)).join(" ");
