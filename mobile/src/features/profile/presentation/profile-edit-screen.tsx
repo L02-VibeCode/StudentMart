@@ -14,7 +14,11 @@ export function ProfileEditScreen({ model, avatar, onBack }: { model: ProfileEdi
     <View style={{ gap: 10 }}>
       {image.avatarUrl ? <Image source={{ uri: image.avatarUrl }} accessibilityLabel="Ảnh đại diện hiện tại" style={{ width: 80, height: 80, borderRadius: 40 }} /> : <Text>Chưa có ảnh đại diện</Text>}
       <AuthButton label="Chọn ảnh từ thư viện" disabled={state.busy || image.busy} onPress={() => { void avatar.choose(); }} />
-      {image.pending && <><Text>Đã chọn ảnh mới, chưa tải lên.</Text><AuthButton label="Tải ảnh đã chọn lên" loading={image.busy} disabled={state.busy} onPress={() => { void avatar.upload(); }} /></>}
+      {image.pending && <>
+        <Image source={{ uri: image.pending.uri }} accessibilityLabel="Ảnh mới đã chọn, chưa lưu" style={{ width: 100, height: 100, borderRadius: 12 }} />
+        <Text>Ảnh mới chưa được lưu. Nhấn “Tải ảnh đã chọn lên” để cập nhật ảnh; nút “Lưu thay đổi” bên dưới chỉ lưu thông tin hồ sơ.</Text>
+        <AuthButton label="Tải ảnh đã chọn lên" loading={image.busy} disabled={state.busy} onPress={() => { void avatar.upload(); }} />
+      </>}
       {!!image.avatarUrl && <AuthButton label="Xóa ảnh đại diện" disabled={state.busy || image.busy} onPress={() => Alert.alert("Xóa ảnh đại diện?", "Tài khoản và thông tin khác vẫn được giữ nguyên.", [{ text: "Hủy", style: "cancel" }, { text: "Xóa ảnh", style: "destructive", onPress: () => { void avatar.remove(); } }])} />}
       {!!image.message && <Text accessibilityLiveRegion="polite">{image.message}</Text>}
     </View>
