@@ -55,3 +55,9 @@ Các giá trị fixture là dữ liệu tổng hợp phục vụ schema validati
 Bộ schema checks trước đây chạy bằng lệnh tạm đã được lưu thành `tests/contracts/account-contract.test.cjs`, bổ sung thành **54 test** có thể tái chạy bằng `pnpm test:contracts`. Các package kiểm chứng được pin ở devDependencies root. `pnpm test` hiện chạy 54 contract tests và 8 unit test backend; cả 62 test cùng `pnpm typecheck` đã đạt khi hoàn thiện sub-ticket.
 
 Đối chiếu từng tiêu chí, đầu vào còn chờ và trạng thái review xem [acceptance.md](acceptance.md). Kết quả review thiết kế và các chênh lệch cần xử lý ở ticket UI nằm trong [account-design-review.md](account-design-review.md). Không có migration/database/runtime UI được thay đổi trong đợt bổ sung này.
+
+## Runtime #101 / #102 (2026-11-14)
+
+Focused HTTP/PostgreSQL profile-edit test PASS: session identity and A/B isolation, client accountId query cannot change identity, strict role/verification/email/avatar injection rejection, persisted values/read-back, Unicode code-point name boundary, null/blank-bio clearing, populated lookup fixtures, neutral UNVERIFIED status, invalid lookup atomic rollback and missing session401. Catalog fixtures are not approved TASK-15 seeds. Database migration generated/reviewed/applied: AddAccountProfileLookups1794647075501; schema check shows5 applied/no pending/matches entities. This profile-edit test does not establish avatar provider behavior; separate avatar HTTP/PG adapter tests and external smoke status are recorded in the implementation audit.
+
+Avatar migration `AddAccountAvatar1794669939674` generated/reviewed/applied; database check6applied/no pending/schema match. Delete204 means local unlink committed; remote removal may remain queued for retry. Missing provider credentials returns safe503 on upload. See backend README for configuration and `avatar:cleanup` retry command.

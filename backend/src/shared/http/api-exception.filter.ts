@@ -32,7 +32,7 @@ export function sendApiError(error: unknown, request: FastifyRequest, reply: Fas
       fields = {};
       for (const issue of error.issues) {
         const name = String(issue.path[0] ?? "body");
-        fields[["email", "password", "displayName"].includes(name) ? name : "body"] = "Thông tin chưa hợp lệ.";
+        fields[["email", "password", "displayName", "bio", "declaredSchoolId", "areaId"].includes(name) ? name : "body"] = "Thông tin chưa hợp lệ.";
       }
     } else if (error instanceof EmailAlreadyExistsError) {
       status = 409;
@@ -56,9 +56,11 @@ export function sendApiError(error: unknown, request: FastifyRequest, reply: Fas
     } else if (["FST_ERR_CTP_INVALID_JSON_BODY", "FST_ERR_CTP_EMPTY_JSON_BODY"].includes((error as { code?: string } | null)?.code ?? "")) {
       status = 400;
       code = "VALIDATION_ERROR";
-    } else if ((error as { code?: string } | null)?.code === "FST_ERR_CTP_BODY_TOO_LARGE") {
+    } else if (["FST_ERR_CTP_BODY_TOO_LARGE", "FST_REQ_FILE_TOO_LARGE"].includes((error as { code?: string } | null)?.code ?? "")) {
       status = 413;
       code = "PAYLOAD_TOO_LARGE";
+    } else if (["FST_FILES_LIMIT", "FST_FIELDS_LIMIT", "FST_PARTS_LIMIT"].includes((error as {code?:string}|null)?.code ?? "")) {
+      status=400; code="VALIDATION_ERROR";
     } else if ((error as { code?: string } | null)?.code === "FST_ERR_CTP_INVALID_MEDIA_TYPE") {
       status = 415;
       code = "UNSUPPORTED_MEDIA_TYPE";

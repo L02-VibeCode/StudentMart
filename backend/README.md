@@ -170,3 +170,19 @@ Controller không chứa SQL/nghiệp vụ; Repository không trả HTTP respons
 Giữ các bất biến: verify tùy chọn, không tự chat, một hội thoại/cặp người/tin, retry không trùng, lịch sử theo quyền, owner_state tách moderation_state. Framework đã chọn NestJS và ORM đã chọn TypeORM; không tự chốt provider hoặc nội dung lookup chưa được duyệt.
 
 Các .gitkeep chỉ giữ khung trong Git, bỏ khi có code thật. Backend dùng pnpm workspace với lockfile chung ở repository root và Vitest cho test. Migration dùng TypeORM; chỉ apply migration đã được review trong phạm vi thay đổi được yêu cầu.
+
+### Profile editing (#101/#102)
+
+`PATCH /api/v1/accounts/me` uses the bearer session and accepts only displayName/bio/declaredSchoolId/areaId. Unknown fields, empty requests and nonexistent lookup IDs fail400 without partial writes. Null clears lookup/bio; blank bio normalizes to null. GET catalog/schools and catalog/areas return stored rows sorted by name/id. No demo catalog is seeded; an empty approved dataset produces an empty list. Run the existing up/check scripts for AddAccountProfileLookups1794647075501. Avatar PUT/DELETE uses the user-selected Cloudinary provider (#104/#105); see configuration below.
+
+### Cloudinary avatars (#104/#105)
+
+Install dependencies with pnpm as usual. `cloudinary` is the official server SDK, `@fastify/multipart` parses one multipart file, and `sharp` fully decodes JPEG/PNG/WebP then re-encodes a bounded WebP (1024px, metadata stripped). Input is limited to5MiB and25MP; MIME/content mismatches, malformed files and multiple files/fields are rejected. No camera or arbitrary client media/account IDs are accepted.
+
+Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` only in backend/.env or deployment secrets, never EXPO_PUBLIC variables. All three are required for upload; absence/provider failure returns safe503 and preserves the avatar. Restart backend after changes. PUT `/api/v1/accounts/me/avatar` is bearer-authenticated multipart with one `file`, returning200 `{account}` only after Cloudinary and DB success. DELETE returns204 after unlinking the current account avatar; repeating it is safe and never deletes the Account. DTO exposes only HTTPS avatar URL, never provider public IDs/secrets.
+
+Replacing/deleting queues the prior provider public ID atomically in AvatarCleanup before unlinking. Provider deletion is attempted after commit; if unavailable the durable intent remains and local unlink still succeeds. Later avatar mutations retry that account's queue (20items per pass). Operators can run `pnpm --filter studentmart-backend avatar:cleanup` to retry a pass for all owners; nonzero exit means pending rows or unavailable services. This CLI does not apply/reset schema. Backups/queue retention and periodic invocation belong to the deployment operator. If the DB becomes unavailable while compensating a completed external upload, an orphan can remain in Cloudinary and needs provider reconciliation; database and Cloudinary do not share a transaction.
+
+Migration AddAccountAvatar1794669939674 adds nullable avatar URL/internal provider reference and the cleanup table. Review up/down; down removes references/queued intent and is destructive to those values. No down was executed. Missing real Cloudinary credentials means adapter-backed HTTP/PG tests do not establish a successful external upload/delete; configure and smoke-test separately.
+
+Official references: [Node upload](https://cloudinary.com/documentation/node_image_and_video_upload), [SDK configuration](https://cloudinary.com/documentation/node_integration), [delete assets](https://cloudinary.com/documentation/delete_assets). No provider credentials or remote URLs supplied by the user are logged.
