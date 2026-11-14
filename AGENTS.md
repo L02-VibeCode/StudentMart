@@ -4,6 +4,10 @@
 
 ## Khi nhận task/ticket GitHub
 
+Khi người dùng giao `#ticketid` để triển khai, đây là chỉ dẫn thường trực cho phép agent chính tự khám phá sub-issues và phân công sub-agents theo công việc. Áp dụng skill [ticket-delivery](.agents/skills/ticket-delivery/SKILL.md). Đọc quan hệ sub-issue thật qua GitHub API, không chỉ suy từ title/body; không có sub-issue thì xử lý issue đó, không tự tạo ticket mới ngoài scope.
+
+Phân công BE/API/schema → backend-dev + typeorm-migrations; mobile/UI → frontend-dev + frontend-design; kiểm thử tích hợp/AC → qa-engineer; chỉ dùng pm khi scope/AC thiếu rõ và tech-lead khi cần quyết định kiến trúc/hợp đồng liên module. Không mặc định gọi tất cả vai trò hoặc thay model. Agent chính giữ ownership nhánh/Project/PR; child agent chỉ commit file được giao sau kiểm tra. Tổng hợp kết quả, báo rõ AC đạt/chưa đạt cho người dùng rồi tạo PR chờ review/approve, không coi báo cáo hoàn tất là quyền merge.
+
 1. Đọc task cha, sub-ticket, hợp đồng API, phụ thuộc, tiêu chí nghiệm thu và quy tắc hoàn thành. Đối chiếu code thật, không coi issue đóng hoặc PR chưa merge là bằng chứng tính năng đã chạy.
 2. Kiểm tra working tree; giữ thay đổi của người dùng. Fetch main và tạo nhánh feature theo ticket từ origin/main. Nếu tiền đề chưa merge, nêu rõ phạm vi dependency trong PR; không tự merge main để vượt qua phụ thuộc.
 3. Chỉ ủy nhiệm khi người dùng/chính sách cho phép. Giao rõ ownership file cho từng agent, yêu cầu phối hợp và không revert thay đổi của agent khác. Agent con không tự đổi nhánh hoặc stage/commit file ngoài phạm vi được giao.
