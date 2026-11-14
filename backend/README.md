@@ -149,7 +149,7 @@ Integration test yêu cầu database đã migrate, kiểm tra lưu Account, UUID
 | database/migrations/, seeds/, reference-data/ | Migration, seed và lookup đã chốt |
 | tests/unit/, integration/, support/ | Policy/service, API + PostgreSQL thật và fixture/provider fake |
 
-Module hiện có: auth, users, catalog, media, listings, chat, notifications, moderation, analytics. Mapping một chủ sở hữu cho mỗi bảng trong tổng 25 bảng nằm ở solution_tree.md.
+Khung module dự kiến gồm auth, users, catalog, media, listings, chat, notifications, moderation, analytics; mapping bảng nằm ở solution_tree.md. Endpoint thực hiện hiện tập trung ở health/accounts/auth. Listings/chat/moderation chưa có API domain, nên việc nối policy owner/member/admin vào các tài nguyên đó vẫn phụ thuộc #5/#7/#23; xem [ma trận TASK-16.04](../docs/implementation/task-16-04-session-guards.md).
 
 Controller không chứa SQL/nghiệp vụ; Repository không trả HTTP response. Service/workflow dùng cùng transaction qua các module; không commit message rồi tạo outbox trong một transaction khác. Worker dùng cùng kiểm tra quyền/binding với API.
 

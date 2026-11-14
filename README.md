@@ -29,7 +29,7 @@ Các script tự xác định repository root nên có thể gọi từ thư m�
 
 For a physical phone in LAN development, the app uses Metro's host on port 3000 automatically when `EXPO_PUBLIC_API_URL` is unset or blank. For a separate API host/port or a release build, set this variable in `mobile/.env` to the API origin (e.g. `http://<computer-LAN-IP>:3000` for local testing). Keep the phone and computer on the same network and allow port 3000 through the local firewall. Restart Expo after changing the environment. Android Emulator uses `http://10.0.2.2:3000`; iOS Simulator uses `http://localhost:3000`. See [phone troubleshooting](mobile/README.md#kiểm-tra-điện-thoại-sau-khi-quét-qr).
 
-Before initialization, copy `backend/.env.example` to `backend/.env`, configure `DATABASE_URL` for PostgreSQL database `student-mart`, and set a random `AUTH_RATE_LIMIT_SECRET` of at least 32 characters (see [backend setup](backend/README.md)). `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. Mobile verifies saved sessions, then opens login or the confirmed account; its development connection panel can check backend health.
+Before initialization, copy `backend/.env.example` to `backend/.env`, configure `DATABASE_URL` for PostgreSQL database `student-mart`, and set a random `AUTH_RATE_LIMIT_SECRET` of at least 32 characters (see [backend setup](backend/README.md)). `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. Mobile verifies saved sessions before access to private screens and offers a public exploration shell. Live listing/search/chat content still depends on TASK-04/06/22; the app shows unavailable states without demo data. See [TASK-16.04 acceptance and dependencies](docs/implementation/task-16-04-session-guards.md).
 
 ```sh
 pnpm run dev:backend  # API only, with reload
@@ -45,6 +45,8 @@ The backend includes registration, login, current-account and session-revocation
 Baseline hợp đồng tài khoản TASK-16.01 (#83): [OpenAPI v1](docs/contracts/accounts.openapi.yaml), [mô hình tài khoản, phiên và migration dự kiến](docs/contracts/account-model.md), [hợp đồng tích hợp mobile](docs/contracts/account-mobile.md). Đây là đặc tả cho các ticket triển khai sau; endpoint chưa được triển khai bởi ticket hợp đồng. Dữ liệu lookup TASK-15 và provider avatar cần được xác nhận trước các phần phụ thuộc.
 
 Hai sub-ticket #84/#85 có [ma trận nghiệm thu](docs/contracts/acceptance.md), [review thiết kế mobile](docs/contracts/account-design-review.md) và [payload mẫu](docs/contracts/examples.json). Chạy `pnpm test:contracts` để kiểm tra schema/permission/projection cục bộ; `pnpm test` chạy cả contract tests và unit test backend.
+
+Quy trình giao task cho agents (nhánh theo ticket, tiêu chí nghiệm thu, commit/PR, GitHub Project và chờ người dùng approve trước khi merge) được quy định tại [AGENTS.md](AGENTS.md).
 
 **Ứng dụng kết nối sinh viên mua, bán và trao đổi đồ cũ trong Làng Đại học ĐHQG TP.HCM.**
 
