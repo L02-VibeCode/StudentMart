@@ -2,6 +2,8 @@
 
 ## Local development
 
+GitHub Actions CI và CD thủ công cho VPS/Docker, Expo EAS: [hướng dẫn CI/CD](docs/ci-cd.md). CI kiểm tra PR/main bằng PostgreSQL tạm; production deploy/build cần hạ tầng, secrets và approval riêng, không tự merge hoặc submit store.
+
 The starter uses **React Native + Expo (SDK 58)** in `mobile/` and **NestJS 11 + Fastify** in `backend/`, both with TypeScript. Use Node.js 22.13+ on the 22.x line, 24.3+ on the 24.x line, or 26+, with pnpm 10.34.3. The root pnpm workspace manages both applications with one `pnpm-lock.yaml`.
 
 ```sh
