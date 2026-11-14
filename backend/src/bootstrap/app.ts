@@ -13,7 +13,7 @@ export async function buildApp(
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.register(config, options.connectDatabase ?? true), new FastifyAdapter({ requestIdHeader: false, bodyLimit: 16384 }),
   );
-  configureHttp(app);
+  configureHttp(app, { avatarDiagnostics: config.NODE_ENV === "development" });
   configureApiDocs(app);
   app.enableCors({ origin: config.CORS_ORIGINS.split(",").map((origin) => origin.trim()) });
   app.enableShutdownHooks();

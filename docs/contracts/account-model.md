@@ -135,3 +135,13 @@ Nguồn kỹ thuật không thay thế quyết định sản phẩm StudentMart 
 ## Bằng chứng review và kiểm chứng
 
 Xem [verification.md](verification.md) cho môi trường, công cụ, 40 ca schema payload, kết quả lint/typecheck/unit test và phần chưa được triển khai. Các ticket tiếp theo phải bổ sung evidence runtime thay vì dùng kết quả schema để đánh dấu API đã hoàn thành.
+
+## Runtime #101 / #102 (2026-11-14)
+
+PATCH `/accounts/me` accepts only displayName, bio, declaredSchoolId and areaId. Strict validation rejects unknown fields, empty objects, blank names and invalid lookup IDs before a successful update. Names/bio are trimmed; blank bio becomes null; omitted fields stay unchanged. Lookup IDs refer to real School/Area rows and null clears the reference. Updates are transactional and identify the account from the current session, never client accountId. School selection does not grant verification.
+
+Migration `AddAccountProfileLookups1794647075501` creates School/Area (UUID, unique code, name), nullable Account refs and ON DELETE SET NULL foreign keys. No dataset is seeded: catalog GET endpoints return real rows and can return an empty list until approved TASK-15 data is imported. Test rows are synthetic UUID fixtures and cleaned up, not production catalog evidence. Migration down drops these references/tables and would lose their values; no revert was run.
+
+Avatar TASK-16.08/#105 uses the user-approved Cloudinary provider, with one5MiB JPEG/PNG/WebP multipart image, full sharp decode/re-encode and HTTPS delivery URL. Nullable avatar refs are server-generated and private provider IDs never enter DTOs. Durable AvatarCleanup intents retain failed provider deletions after local unlink. No real external smoke test is claimed without configured Cloudinary credentials.
+
+Avatar migration `AddAccountAvatar1794669939674` generated/reviewed/applied; database check6applied/no pending/schema match. Delete204 means local unlink committed; remote removal may remain queued for retry. Missing provider credentials returns safe503 on upload. See backend README for configuration and `avatar:cleanup` retry command.

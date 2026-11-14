@@ -21,7 +21,7 @@ const createAccountSchema = z.strictObject({
 });
 
 export type CreateAccountInput = z.input<typeof createAccountSchema>;
-export type PublicAccount = Pick<Account, "id" | "email" | "displayName" | "role" | "createdAt" | "updatedAt"> & Partial<Pick<Account, "bio">>;
+export type PublicAccount = Pick<Account, "id" | "email" | "displayName" | "role" | "createdAt" | "updatedAt"> & Partial<Pick<Account, "bio" | "declaredSchool" | "area" | "avatarUrl">>;
 
 export class AccountsService {
   constructor(private readonly accounts: Repository<Account>) {}

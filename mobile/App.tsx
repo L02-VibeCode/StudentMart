@@ -1,3 +1,9 @@
+import { createAvatarModel } from "./src/features/profile/business/avatar-model";
+import { createNativeAvatarRepository } from "./src/features/profile/data/native-avatar-repository";
+import { pickAvatar } from "./src/features/profile/data/native-image-picker";
+import { ProfileEditScreen } from "./src/features/profile/presentation/profile-edit-screen";
+import { createProfileEditModel } from "./src/features/profile/business/profile-edit-model";
+import { createProfileEditRepository } from "./src/features/profile/data/profile-edit-repository";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useSyncExternalStore } from "react";
 import { ActivityIndicator, AppState, BackHandler } from "react-native";
@@ -25,8 +31,10 @@ const register = createRegistrationApi(API_URL);
 const accountResources = createAccountLogoutResources();
 const auth = createAuthCoordinator(createAuthApi(API_URL), credentialStore, Date.now, accountResources);
 const navigation = createSessionNavigation(auth, unavailableListings);
+const avatar = createAvatarModel(createNativeAvatarRepository(API_URL, auth), auth, pickAvatar);
+const profileEdit = createProfileEditModel(createProfileEditRepository(API_URL, auth), auth);
 const profile = createProfileModel(createProfileRepository(auth), auth);
-accountResources.register({ async clearPrivate() { profile.reset(); } });
+accountResources.register({ async clearPrivate() { profile.reset(); profileEdit.reset(); avatar.reset(); } });
 
 async function cancelLogin() {
   const pendingLogin = auth.getSnapshot().status === "guest" && auth.getSnapshot().busy;
@@ -47,12 +55,16 @@ export default function App() {
   useEffect(() => {
     const subscription = AppState.addEventListener("change", next => {
       // Guest forms have no credential to revalidate; keep autofill/background transitions from discarding them.
-      if (next === "active" && auth.getSnapshot().status !== "guest") void auth.restore({ force: true });
+      if (next === "active" && navigation.getSnapshot().route.name === "profile-edit" && auth.getSnapshot().status === "authenticated") {
+        // Revalidate without replacing the epoch/draft when the system image picker returns.
+        void auth.runPrivate(async () => undefined).catch(() => undefined);
+      } else if (next === "active" && auth.getSnapshot().status !== "guest") void auth.restore({ force: true });
     });
     const back = BackHandler.addEventListener("hardwareBackPress", () => {
       const route = navigation.getSnapshot().route.name;
       if (["login", "register"].includes(route)) { void cancelLogin(); return true; }
-      if (["profile-edit", "profile-verification"].includes(route)) { void navigation.request({ action: "openPrivateProfile" }); return true; }
+      if (route === "profile-edit") return true;
+      if (["profile-verification"].includes(route)) { void navigation.request({ action: "openPrivateProfile" }); return true; }
       if (route !== "browse") { navigation.browse(); return true; }
       return false;
     });
@@ -68,7 +80,9 @@ export default function App() {
     screen = <AccountScreen key={state.account.id} model={profile} onBrowse={navigation.browse}
       onEdit={() => navigation.profileDestination("edit")} onVerify={() => navigation.profileDestination("verification")}
       onEndSession={async () => { navigation.resetForLogout(); await auth.endSession(); }} />;
-  } else if (["profile-edit", "profile-verification"].includes(route.name) && state.status === "authenticated" && state.account) {
+  } else if (route.name === "profile-edit" && state.status === "authenticated") {
+    screen = <ProfileEditScreen key={state.account?.id} model={profileEdit} avatar={avatar} onBack={() => { void navigation.request({ action: "openPrivateProfile" }); }} />;
+  } else if (["profile-verification"].includes(route.name) && state.status === "authenticated" && state.account) {
     screen = <AuthLayout title={route.name === "profile-edit" ? "Chỉnh sửa hồ sơ" : "Xác thực email trường"}
       subtitle={route.name === "profile-edit" ? "Chức năng chỉnh sửa hồ sơ chưa sẵn sàng. Thông tin hiện tại của bạn vẫn được giữ nguyên."
         : "Xác thực email trường là tùy chọn và chưa sẵn sàng trên phiên bản này. Bạn vẫn có thể dùng các chức năng được phép khi chưa xác thực."}>

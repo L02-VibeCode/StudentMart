@@ -3,6 +3,7 @@ info:
   title: StudentMart Account API Contract
   version: 1.0.0
   description: >-
+    Runtime #101/#102 adds session-bound profile PATCH and catalog reads; catalog rows require approved TASK-15 data. Avatar upload/delete use the explicitly approved Cloudinary provider; external smoke testing requires configured credentials.
     Baseline TASK-16.01 (#83), R01/R06, US01/US06. This specification defines
     future implementation tickets; these endpoints are not implemented by #83.
     Normative lifecycle, validation and migration decisions: account-model.md.

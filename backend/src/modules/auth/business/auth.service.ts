@@ -35,7 +35,7 @@ export class AuthService {
       if (!found || !valid) throw new AuthError(401, "INVALID_CREDENTIALS");
       const result = await this.source.transaction(async manager => {
         const account = await manager.getRepository(Account).createQueryBuilder("account")
-          .addSelect("account.loginDisabledAt").where("account.id = :id", { id: found.id }).setLock("pessimistic_read").getOne();
+          .addSelect("account.loginDisabledAt").leftJoinAndSelect("account.declaredSchool", "declaredSchool").leftJoinAndSelect("account.area", "area").where("account.id = :id", { id: found.id }).setLock("pessimistic_read", undefined, ["account"]).getOne();
         if (!account) throw new AuthError(401, "INVALID_CREDENTIALS");
         if (account.loginDisabledAt) throw new AuthError(403, "FORBIDDEN");
         const token = randomBytes(32).toString("base64url");
@@ -55,7 +55,7 @@ export class AuthService {
   async authenticate(authorization?: string): Promise<SessionActor> {
     const token = bearer(authorization);
     const session = await this.source.getRepository(AuthSession).createQueryBuilder("session")
-      .innerJoinAndSelect("session.account", "account").addSelect("account.loginDisabledAt")
+      .innerJoinAndSelect("session.account", "account").leftJoinAndSelect("account.declaredSchool", "declaredSchool").leftJoinAndSelect("account.area", "area").addSelect("account.loginDisabledAt")
       .where("session.tokenHash = :hash", { hash: digest(token) }).getOne();
     if (!session || session.revokedAt) throw new AuthError(401, "UNAUTHENTICATED");
     if (session.expiresAt.getTime() <= Date.now()) throw new AuthError(401, "SESSION_EXPIRED");
