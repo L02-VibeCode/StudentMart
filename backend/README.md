@@ -190,3 +190,9 @@ Official references: [Node upload](https://cloudinary.com/documentation/node_ima
 ### Avatar diagnostic verification (2026-11-14)
 
 A diagnostic smoke test with the configured local Cloudinary account passed against both a fresh production bootstrap and the already-running API on port3000: login200, multipart WebP upload200, HTTPS image delivery200, delete204 and zero pending cleanup for the temporary account. A generated270865-byte PNG also uploaded200 and deleted204 on port3000, confirming multipart uploads are not capped by the16384-byte JSON body limit. All test accounts/sessions and generated remote assets were cleaned up. No credentials or provider IDs were printed. This verifies server/provider behavior from this machine, not the phone image picker, LAN reachability or a particular user-selected file.
+
+### Diagnose a phone upload network error
+
+In development only, the backend prints sanitized `avatar_request` JSON events with phase (`received`, `completed`, or `client_aborted` while receiving), fixed endpoint path, method, elapsedMs and HTTP status when available. It never logs bearer headers, query strings, account IDs, images, filenames or Cloudinary configuration. Production does not enable these diagnostics. Restart the backend after pulling this change.
+
+When retrying from the phone, no `received` event means that attempt has not reached this API; inspect device LAN/API origin or the native file transport. `received` without a completed response points to body transfer, client disconnect, or server processing. A completed HTTP error identifies a server response and should be compared with the mobile error mapping. A fast200 does not prove the phone consumed the response. These events diagnose timing; they do not raise upload timeouts or claim a particular phone error was reproduced.
