@@ -4,7 +4,7 @@ services:
     image: ${API_IMAGE:?Set API_IMAGE to an immutable image digest}
     restart: unless-stopped
     init: true
-    env_file: /opt/studentmart/backend.env
+    env_file: ${BACKEND_ENV_FILE:-/opt/studentmart/backend.env}
     ports:
       - '127.0.0.1:3000:3000'
     security_opt:

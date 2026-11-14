@@ -92,7 +92,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate production Compose configuration (no deployment)
-        run: API_IMAGE=studentmart-api:ci docker compose -f infra/compose.production.yml config --no-env-resolution --quiet
+        run: |
+          touch "$RUNNER_TEMP/backend-validation.env"
+          API_IMAGE=studentmart-api:ci BACKEND_ENV_FILE="$RUNNER_TEMP/backend-validation.env" docker compose -f infra/compose.production.yml config --quiet
       - name: Validate deployment shell syntax
         run: bash -n scripts/deploy/backend.sh
       - name: Build production image without pushing
