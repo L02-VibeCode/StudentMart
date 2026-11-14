@@ -29,7 +29,7 @@ Các script tự xác định repository root nên có thể gọi từ thư m�
 
 For a physical phone in LAN development, the app uses Metro's host on port 3000 automatically when `EXPO_PUBLIC_API_URL` is unset or blank. For a separate API host/port or a release build, set this variable in `mobile/.env` to the API origin (e.g. `http://<computer-LAN-IP>:3000` for local testing). Keep the phone and computer on the same network and allow port 3000 through the local firewall. Restart Expo after changing the environment. Android Emulator uses `http://10.0.2.2:3000`; iOS Simulator uses `http://localhost:3000`. See [phone troubleshooting](mobile/README.md#kiểm-tra-điện-thoại-sau-khi-quét-qr).
 
-Before initialization, copy `backend/.env.example` to `backend/.env` and configure `DATABASE_URL` for PostgreSQL database `student-mart`. `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. Mobile now opens the registration form; its development connection panel can check backend health.
+Before initialization, copy `backend/.env.example` to `backend/.env`, configure `DATABASE_URL` for PostgreSQL database `student-mart`, and set a random `AUTH_RATE_LIMIT_SECRET` of at least 32 characters (see [backend setup](backend/README.md)). `db:init` creates the database if missing and applies pending TypeORM migrations. The API connects to PostgreSQL at startup and binds to `0.0.0.0` for local device access. `GET http://localhost:3000/health` returns `{"status":"ok"}`. Mobile verifies saved sessions, then opens login or the confirmed account; its development connection panel can check backend health.
 
 ```sh
 pnpm run dev:backend  # API only, with reload
@@ -40,7 +40,7 @@ pnpm run build       # Compile backend
 pnpm --filter studentmart-backend start
 ```
 
-The backend includes PostgreSQL integration and the registration API. Login and the remaining product features are pending. After starting the backend, open **[Swagger UI](http://localhost:3000/api/docs)** to inspect and test implemented APIs. OpenAPI exports: `/api/docs/openapi.json` and `/api/docs/openapi.yaml`. See [API docs installation and usage](backend/README.md#swagger-ui--tài-liệu-và-thử-api), [mobile setup](mobile/README.md) and [backend setup](backend/README.md).
+The backend includes registration, login, current-account and session-revocation APIs. Mobile login stores credentials with Expo SecureStore and confirms identity through `/accounts/me`. See the [TASK-16.03 verification matrix](docs/implementation/task-16-03-login.md). After starting the backend, open **[Swagger UI](http://localhost:3000/api/docs)** to inspect and test implemented APIs. OpenAPI exports: `/api/docs/openapi.json` and `/api/docs/openapi.yaml`. See [API docs installation and usage](backend/README.md#swagger-ui--tài-liệu-và-thử-api), [mobile setup](mobile/README.md) and [backend setup](backend/README.md).
 
 Baseline hợp đồng tài khoản TASK-16.01 (#83): [OpenAPI v1](docs/contracts/accounts.openapi.yaml), [mô hình tài khoản, phiên và migration dự kiến](docs/contracts/account-model.md), [hợp đồng tích hợp mobile](docs/contracts/account-mobile.md). Đây là đặc tả cho các ticket triển khai sau; endpoint chưa được triển khai bởi ticket hợp đồng. Dữ liệu lookup TASK-15 và provider avatar cần được xác nhận trước các phần phụ thuộc.
 

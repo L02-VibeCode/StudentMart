@@ -22,7 +22,15 @@ Copy `.env.example` thành `.env` nếu muốn thay đổi cấu hình. Mặc đ
 
 `DATABASE_URL` được đọc từ `backend/.env` khi khởi động và được kiểm tra trong `loadConfig()`. Tên database là `student-mart`; định dạng: `postgresql://USER:PASSWORD@HOST:5432/student-mart`. Các ký tự đặc biệt trong username/password cần URL-encode. Biến môi trường của process được ưu tiên hơn file `.env`. File `.env` và file nguồn credentials cục bộ `env-varibale.md` được Git ignore; `.env.example` chỉ chứa giá trị mẫu. Khi chạy backend, `DATABASE_URL` là bắt buộc và NestJS mở connection pool qua TypeORM.
 
-`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Unit test kiểm tra HTTP bằng Fastify injection và tắt kết nối database một cách tường minh. API đăng ký đã triển khai; đăng nhập và phiên thuộc ticket tiếp theo.
+Auth API bắt buộc `AUTH_RATE_LIMIT_SECRET` ngẫu nhiên ít nhất 32 ký tự để tạo khóa HMAC của email trong bộ đếm login. Sau khi tạo `backend/.env`, chạy từ root để sinh và ghi secret trực tiếp vào file ignored, không in giá trị ra terminal (lệnh từ chối ghi nếu đã cấu hình):
+
+```powershell
+node -e "const fs=require('node:fs'),p='backend/.env';if(/^AUTH_RATE_LIMIT_SECRET=/m.test(fs.readFileSync(p,'utf8')))throw Error('Already configured');fs.appendFileSync(p,'\nAUTH_RATE_LIMIT_SECRET='+require('node:crypto').randomBytes(32).toString('hex')+'\n')"
+```
+
+Giữ secret riêng cho môi trường; không đưa vào `EXPO_PUBLIC_*`. Sau đó chạy `scripts/up.ps1` và khởi động API. Database CLI không cần khởi tạo AuthModule; API từ chối khởi động auth khi thiếu secret.
+
+`src/app.module.ts` đăng ký module/controller NestJS; `src/bootstrap/app.ts` tạo app và `src/bootstrap/server.ts` nạp env rồi mở cổng. Nest CLI build vào `dist/`; `pnpm start` chạy `dist/bootstrap/server.js`. Unit test kiểm tra HTTP bằng Fastify injection và tắt kết nối database một cách tường minh. Đã có API đăng ký, đăng nhập, danh tính hiện tại và thu hồi phiên.
 
 ## Swagger UI — tài liệu và thử API
 
@@ -47,7 +55,9 @@ Nếu đổi PORT, thay 3000 bằng port đã cấu hình. Từ máy khác cùng
 
 Trong Swagger, mở `GET /health` rồi **Try it out → Execute** để kiểm tra server. Với `POST /api/v1/auth/register`, sửa JSON request và bấm Execute; UI hiển thị curl, status code, headers và response body. Dùng email test mới cho mỗi lần đăng ký; API lưu Account thật trong database đang cấu hình. Thành công trả 201, email trùng trả 409, input sai trả 400, vượt 5 lần thử/15 phút/IP trả 429. Đăng ký không cần token và không cấp phiên đăng nhập.
 
-Swagger chỉ hiển thị route đã đăng ký trong NestJS. Schema/response đăng ký lấy từ `docs/contracts/accounts.openapi.yaml`; các API dự kiến như login/profile chưa xuất hiện. Khi thêm endpoint, đăng ký controller và bổ sung hợp đồng tương ứng. Thay file hợp đồng rồi restart dev server hoặc build lại. Build tự copy hợp đồng vào `backend/dist/shared/http/accounts.openapi.yaml` để bản build có thể chạy độc lập với thư mục docs nguồn. Không sửa trực tiếp file trong dist.
+Swagger chỉ hiển thị route đã đăng ký trong NestJS, hiện gồm health, register, login, logout và GET accounts/me. Schema/response lấy từ `docs/contracts/accounts.openapi.yaml`; các API dự kiến khác chưa xuất hiện. Khi thêm endpoint, đăng ký controller và bổ sung hợp đồng tương ứng. Thay file hợp đồng rồi restart dev server hoặc build lại. Build tự copy hợp đồng vào `backend/dist/shared/http/accounts.openapi.yaml` để bản build có thể chạy độc lập với thư mục docs nguồn. Không sửa trực tiếp file trong dist.
+
+Để thử đăng nhập: gọi `POST /api/v1/auth/login` với tài khoản đã đăng ký, nhập token từ response vào **Authorize** (scheme bearerSession), rồi gọi `GET /api/v1/accounts/me`. Kết quả phải là tài khoản sở hữu phiên. Dùng `POST /api/v1/auth/logout` để thu hồi phiên thử. Không đưa token/password vào log, issue, ảnh chụp hoặc tài liệu. Swagger không persist Authorization qua reload trình duyệt.
 
 Kiểm tra bằng `pnpm test`, `pnpm typecheck` và `pnpm --filter studentmart-backend build`. Ngày 2026-11-13: 54 contract test + 16 unit test PASS; smoke test HTTP của bản build kết nối PostgreSQL thật trả 200 cho UI, JS/CSS, JSON/YAML và health. OpenAPI chỉ liệt kê `/health` và `/api/v1/auth/register`.
 
