@@ -97,6 +97,20 @@ Migration `1794622765393-AddAuthSessions.ts` được sinh bằng `scripts/add.p
 
 Kiểm tra: `pnpm --filter studentmart-backend test` và `pnpm --filter studentmart-backend test:integration`. Tests bao phủ mật khẩu đúng/sai/unknown, digest-only, 30 ngày, me theo bearer, trường verify tùy chọn, expiry/revocation, restriction, logout idempotent, lỗi an toàn, không log credential và giới hạn thử/chạy đồng thời. Account test dùng UUID, session/account được cleanup đúng fixture; không reset database. Swagger tự nhận login/me/logout từ controller và dùng schema hợp đồng chung.
 
+## Guard phiên và quyền tài nguyên — #93
+
+AuthModule đăng ký `SessionGuard` và `ResourceAccessGuard` bằng `APP_GUARD`, theo thứ tự xác thực trước phân quyền. Endpoint Nest mới mặc định yêu cầu phiên hợp lệ. Đánh dấu rõ `@PublicRoute()` cho endpoint cho khách; hiện health/register/login là public. Logout được miễn bước kiểm tra phiên còn sống để giữ tính idempotent của token đúng format, nhưng vẫn tự kiểm tra bearer trong service. Swagger assets/tài liệu vẫn truy cập được như trước.
+
+`SessionGuard` lấy bearer từ header, tra digest của AuthSession và Account hiện tại mỗi request, kiểm tra revoked/expiry/restriction, rồi gắn actor bằng Symbol nội bộ. `@CurrentActor()` chỉ đọc actor do guard tạo; `/accounts/me` dùng nguồn này, không nhận accountId/role của client. Không có credential/hash trong actor account DTO. Response API riêng dùng no-store.
+
+Module sở hữu tài nguyên tích hợp `@RequireAccess(...)` với rule `owner`, `conversationMember` hoặc `admin`. Owner/member cần injection token của provider triển khai `ResourceAccessResolver` và tên route param (`resourceParam`); resolver phải đọc owner/membership từ nguồn server, không trả dữ liệu do body/query tự khai. Mọi rule khai báo cùng phương thức, kể cả decorator lặp, và rule trên class đều được kiểm tra theo AND. Không tìm được provider/resource/member hoặc param thì trả 403; ADMIN không tự vượt qua rule owner/member. Role được đọc lại từ Account, không chốt từ lúc login.
+
+Guard là bước kiểm tra request; mutation nghiệp vụ ở task tài nguyên còn phải kiểm tra quyền/ownership/membership trong transaction phù hợp để tránh thay đổi quyền giữa kiểm tra và ghi. Hợp đồng `ResourceAccessResolver` không phụ thuộc HTTP; decorator/lookup DI nằm ở presentation.
+
+Hiện chưa có production API tin đăng/chat/moderation trong repository. Ticket này không thêm endpoint giả, bảng hoặc dữ liệu mẫu của TASK-04/06/22. `tests/support/access-app.ts` chỉ đăng ký controller/resource provider **trong test** để chứng minh owner/member/admin, A không đọc B, đổi quyền trước request tiếp theo và policy thiếu nguồn phải deny. Nghiệm thu public listing/search/detail và quyền trên endpoint tài nguyên thật còn phụ thuộc các task đó.
+
+Không có thay đổi entity, không sinh/apply migration mới. `scripts/check.ps1` xác nhận 3 migration trước đã apply, không pending và schema khớp entity. Kiểm tra backend: typecheck/build, unit tests, integration PostgreSQL và smoke test app thật; health vẫn 200, register/login sai payload vẫn 400 thay vì bị bắt login, me không bearer 401.
+
 ## Account và migration code first
 
 TypeORM quản lý entity `src/modules/accounts/business/account.entity.ts`, ánh xạ tới bảng PostgreSQL `"Account"` (phải giữ dấu nháy kép trong SQL do tên có chữ hoa). Các cột: UUID `id`, email duy nhất, `password_hash`, `display_name`, role `MEMBER`/`ADMIN`, `created_at`, `updated_at`.
@@ -135,7 +149,7 @@ Integration test yêu cầu database đã migrate, kiểm tra lưu Account, UUID
 | database/migrations/, seeds/, reference-data/ | Migration, seed và lookup đã chốt |
 | tests/unit/, integration/, support/ | Policy/service, API + PostgreSQL thật và fixture/provider fake |
 
-Module hiện có: auth, users, catalog, media, listings, chat, notifications, moderation, analytics. Mapping một chủ sở hữu cho mỗi bảng trong tổng 25 bảng nằm ở solution_tree.md.
+Khung module dự kiến gồm auth, users, catalog, media, listings, chat, notifications, moderation, analytics; mapping bảng nằm ở solution_tree.md. Endpoint thực hiện hiện tập trung ở health/accounts/auth. Listings/chat/moderation chưa có API domain, nên việc nối policy owner/member/admin vào các tài nguyên đó vẫn phụ thuộc #5/#7/#23; xem [ma trận TASK-16.04](../docs/implementation/task-16-04-session-guards.md).
 
 Controller không chứa SQL/nghiệp vụ; Repository không trả HTTP response. Service/workflow dùng cùng transaction qua các module; không commit message rồi tạo outbox trong một transaction khác. Worker dùng cùng kiểm tra quyền/binding với API.
 

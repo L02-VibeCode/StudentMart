@@ -1,12 +1,14 @@
 import { Body, Controller, HttpCode, Inject, Post, Res } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
 import { AccountsService } from "../business/accounts.service";
+import { PublicRoute } from "../../auth/presentation/access.decorators";
 
 @Controller("api/v1/auth")
 export class RegistrationController {
   constructor(@Inject(AccountsService) private readonly accounts: AccountsService) {}
 
   @Post("register")
+  @PublicRoute()
   @HttpCode(201)
   async register(
     @Body() input: unknown,

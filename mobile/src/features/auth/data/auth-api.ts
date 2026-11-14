@@ -2,8 +2,11 @@ import { AuthError, parseAccount, parseLogin, type AuthApi } from "../business/a
 import type { ApiRequest } from "./registration-api";
 
 export function createAuthApi(origin: string, request: ApiRequest = fetch): AuthApi {
-  async function send(path: string, method: string, token?: string, input?: unknown, expectedStatus = 200) {
+  async function send(path: string, method: string, token?: string, input?: unknown, expectedStatus = 200, signal?: AbortSignal) {
     const controller = new AbortController();
+    const abort = () => controller.abort();
+    if (signal?.aborted) abort();
+    else signal?.addEventListener("abort", abort, { once: true });
     const timer = setTimeout(() => controller.abort(), 15000);
     try {
       const response = await request(`${origin}/api/v1${path}`, {
@@ -31,11 +34,11 @@ export function createAuthApi(origin: string, request: ApiRequest = fetch): Auth
     } catch (error) {
       if (error instanceof AuthError) throw error;
       throw new AuthError("NETWORK_ERROR", "Không kết nối được máy chủ. Kiểm tra mạng và thử lại.");
-    } finally { clearTimeout(timer); }
+    } finally { clearTimeout(timer); signal?.removeEventListener("abort", abort); }
   }
   return {
     async login(input) { return parseLogin(await send("/auth/login", "POST", undefined, { email: input.email, password: input.password })); },
-    async me(token) { const body = await send("/accounts/me", "GET", token); return parseAccount(body?.account); },
+    async me(token, signal) { const body = await send("/accounts/me", "GET", token, undefined, 200, signal); return parseAccount(body?.account); },
     async logout(token) { await send("/auth/logout", "POST", token, undefined, 204); },
   };
 }
