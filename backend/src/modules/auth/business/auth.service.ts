@@ -7,6 +7,7 @@ import { AuthSession } from "./auth-session.entity";
 import { AuthError } from "./auth-errors";
 import { LoginRateLimiter } from "./login-rate-limiter";
 import { verifyPassword } from "./password";
+import type { SessionActor } from "./session-actor";
 
 const loginSchema = z.strictObject({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -49,7 +50,7 @@ export class AuthService {
       throw error;
     } finally { complete(failed); }
   }
-  async me(authorization?: string) {
+  async authenticate(authorization?: string): Promise<SessionActor> {
     const token = bearer(authorization);
     const session = await this.source.getRepository(AuthSession).createQueryBuilder("session")
       .innerJoinAndSelect("session.account", "account").addSelect("account.loginDisabledAt")
@@ -57,7 +58,11 @@ export class AuthService {
     if (!session || session.revokedAt) throw new AuthError(401, "UNAUTHENTICATED");
     if (session.expiresAt.getTime() <= Date.now()) throw new AuthError(401, "SESSION_EXPIRED");
     if (session.account.loginDisabledAt) throw new AuthError(403, "FORBIDDEN");
-    return { account: privateAccountDto(session.account) };
+    return { account: privateAccountDto(session.account), sessionId: session.id };
+  }
+  async me(authorization?: string) {
+    const actor = await this.authenticate(authorization);
+    return { account: actor.account };
   }
   async logout(authorization?: string) {
     const token = bearer(authorization);
