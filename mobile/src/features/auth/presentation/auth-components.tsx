@@ -33,9 +33,9 @@ export function AuthField({ label, error, password, ...props }: TextInputProps &
   </View>;
 }
 
-export function AuthButton({ label, loading, onPress }: { label: string; loading?: boolean; onPress: () => void }) {
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!loading, busy: !!loading }}
-    disabled={loading} onPress={onPress} style={({ pressed }) => [styles.button, loading && styles.disabled, pressed && styles.pressed]}>
+export function AuthButton({ label, loading, disabled, onPress }: { label: string; loading?: boolean; disabled?: boolean; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!loading || !!disabled, busy: !!loading }}
+    disabled={loading || disabled} onPress={onPress} style={({ pressed }) => [styles.button, (loading || disabled) && styles.disabled, pressed && styles.pressed]}>
     {loading && <ActivityIndicator color="#252525" />}
     <Text style={styles.buttonText}>{label}</Text>
   </Pressable>;
