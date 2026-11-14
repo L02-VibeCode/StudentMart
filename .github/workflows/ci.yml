@@ -1,0 +1,103 @@
+name: StudentMart CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify FE, BE and PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:ci-only-password@127.0.0.1:5432/student-mart
+      AUTH_RATE_LIMIT_SECRET: ci-only-auth-rate-secret-not-for-production-116
+      EXPO_PUBLIC_API_URL: https://ci-build.example.invalid
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: student-mart
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 10.34.3
+          cache: true
+          run_install: false
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck mobile and backend
+        run: pnpm typecheck
+      - name: Contract and unit tests
+        run: pnpm test
+      - name: Build backend and apply migrations to ephemeral database
+        run: pnpm --filter studentmart-backend migration:run
+      - name: Database schema check
+        run: pnpm --filter studentmart-backend db:check
+      - name: HTTP and PostgreSQL integration tests
+        run: pnpm --filter studentmart-backend test:integration
+      - name: Expo dependency check
+        run: pnpm --filter studentmart-mobile exec expo install --check
+      - name: Export Android and iOS validation bundles
+        run: pnpm --filter studentmart-mobile exec expo export --platform all --output-dir dist
+      - name: Upload backend compiled output
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-dist-${{ github.sha }}
+          path: backend/dist/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload mobile validation bundles (not store builds)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mobile-validation-${{ github.sha }}
+          path: mobile/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  container:
+    name: Build API container
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate production Compose configuration (no deployment)
+        run: API_IMAGE=studentmart-api:ci docker compose -f infra/compose.production.yml config --no-env-resolution --quiet
+      - name: Validate deployment shell syntax
+        run: bash -n scripts/deploy/backend.sh
+      - name: Build production image without pushing
+        run: docker build --tag studentmart-api:ci --file backend/Dockerfile .
+      - name: Check image starts without root and contains runtime/migrations
+        run: |
+          test "$(docker image inspect studentmart-api:ci --format '{{.Config.User}}')" = node
+          docker run --rm --entrypoint node studentmart-api:ci -e "require('@nestjs/core'); require('typeorm'); require('node:fs').accessSync('dist/shared/http/accounts.openapi.yaml'); console.log('Runtime dependencies and contract: OK')"

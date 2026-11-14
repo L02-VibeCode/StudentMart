@@ -19,6 +19,11 @@ mobile/ios/
 /Design
 /.agents
 /.codex
-/.github
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/ci.yml
+!/.github/workflows/deploy-backend.yml
+!/.github/workflows/build-mobile.yml
 /.pnpm-store
 /.vscode

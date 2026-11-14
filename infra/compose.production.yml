@@ -1,0 +1,17 @@
+name: studentmart
+services:
+  api:
+    image: ${API_IMAGE:?Set API_IMAGE to an immutable image digest}
+    restart: unless-stopped
+    init: true
+    env_file: /opt/studentmart/backend.env
+    ports:
+      - '127.0.0.1:3000:3000'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'

@@ -1,0 +1,12 @@
+{
+  "cli": { "version": "27.10.0", "appVersionSource": "remote" },
+  "build": {
+    "production": {
+      "environment": "production",
+      "distribution": "store",
+      "autoIncrement": true,
+      "node": "24.3.0",
+      "pnpm": "10.34.3"
+    }
+  }
+}
