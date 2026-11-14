@@ -1,4 +1,5 @@
 import { AuthError, type AuthApi, type Credential, type CredentialStore, type LoginInput, type PrivateAccount } from "./auth";
+import type { AccountLogoutResources } from "./account-logout-resources";
 
 export type AuthState = {
   status: "checking" | "guest" | "authenticated" | "offline" | "blocked" | "restricted";
@@ -8,11 +9,12 @@ export type AuthState = {
   epoch: number;
 };
 
-export function createAuthCoordinator(api: AuthApi, store: CredentialStore, now: () => number = Date.now) {
+export function createAuthCoordinator(api: AuthApi, store: CredentialStore, now: () => number = Date.now, resources?: AccountLogoutResources) {
   let state: AuthState = { status: "checking", account: null, busy: false, message: "", epoch: 0 };
   let credential: Credential | null = null;
   let pendingRevocations = 0;
   let revocationUnconfirmed = false;
+  let cleanupAccountId: string | null = null;
   let storageQueue: Promise<void> = Promise.resolve();
   const listeners = new Set<() => void>();
   const privateRequests = new Set<AbortController>();
@@ -99,6 +101,10 @@ export function createAuthCoordinator(api: AuthApi, store: CredentialStore, now:
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
 
     async restore(options: { force?: boolean } = {}) {
+      if (cleanupAccountId) {
+        update({ status: "blocked", account: null, message: "Dữ liệu riêng chưa được dọn xong. Vui lòng thử lại thao tác xóa phiên." });
+        return;
+      }
       if (state.busy || (state.status === "authenticated" && !options.force)) return;
       abortPrivateRequests();
       const epoch = state.epoch + 1;
@@ -169,18 +175,29 @@ export function createAuthCoordinator(api: AuthApi, store: CredentialStore, now:
 
     async endSession() {
       const previous = credential;
+      cleanupAccountId = previous?.accountId ?? state.account?.id ?? cleanupAccountId;
       credential = null;
       abortPrivateRequests();
       const epoch = state.epoch + 1;
       update({ epoch, status: "checking", account: null, busy: true, message: "" });
       const revoked = previous ? revoke(previous.token) : Promise.resolve(true);
+      // Local logout must not wait for the network timeout. Never let this response affect account B.
+      void revoked.then(() => {
+        if (isCurrent(epoch) && state.status === "guest") update({ message: revocationUnconfirmed || pendingRevocations > 0
+          ? "Đã đăng xuất trên thiết bị. Chưa xác nhận thu hồi phiên trên máy chủ." : "Đã đăng xuất." });
+      });
       try {
-        await mutateStorage(() => store.clear());
-        await revoked;
+        const accountId = cleanupAccountId;
+        const results = await Promise.allSettled([
+          mutateStorage(() => store.clear()),
+          ...(accountId && resources ? [resources.clear(accountId)] : []),
+        ]);
+        if (results.some(result => result.status === "rejected")) throw new Error("Local cleanup incomplete");
+        if (isCurrent(epoch)) cleanupAccountId = null;
         if (isCurrent(epoch)) update({ status: "guest", message: revocationUnconfirmed || pendingRevocations > 0
-          ? "Đã xóa phiên trên thiết bị. Chưa xác nhận thu hồi phiên trên máy chủ." : "" });
+          ? "Đã đăng xuất trên thiết bị. Chưa xác nhận thu hồi phiên trên máy chủ." : "Đã đăng xuất." });
       } catch {
-        if (isCurrent(epoch)) update({ status: "blocked", message: "Không thể xóa phiên trên thiết bị. Vui lòng thử lại thao tác xóa phiên." });
+        if (isCurrent(epoch)) update({ status: "blocked", message: "Chưa xóa hết phiên hoặc dữ liệu riêng trên thiết bị. Vui lòng thử lại thao tác xóa phiên." });
       } finally { if (isCurrent(epoch)) update({ busy: false }); }
     },
   };
