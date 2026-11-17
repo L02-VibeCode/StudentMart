@@ -161,6 +161,8 @@ StudentMart dùng **Three-Layer Architecture**, nhóm mã theo chức năng. Mob
 
 Đã tạo khung thư mục `mobile/` và `backend/` với ba tầng cho từng feature/module, manifest và ứng dụng khởi động được. Backend có entity Account và migration khởi tạo; các thư mục nghiệp vụ chưa triển khai dùng `.gitkeep`.
 
+Thư mục `landing/` là trang giới thiệu công khai của sản phẩm (React + Vite). Đây là site tĩnh phục vụ trình bày và dẫn tới tài liệu, không chứa nghiệp vụ của ứng dụng; thư mục dùng `npm` và `package-lock.json` riêng, không nằm trong pnpm workspace. Xem [landing/README.md](landing/README.md).
+
 ```text
 StudentMart/
 ├── mobile/
@@ -183,6 +185,10 @@ StudentMart/
 │   │   └── workers/
 │   ├── database/                  # Migrations, seeds và reference-data
 │   └── tests/                     # Unit, integration và support
+├── landing/                       # Trang giới thiệu công khai (React + Vite, npm riêng)
+│   ├── README.md
+│   ├── public/                    # logo, banner, 24 ảnh màn hình
+│   └── src/                       # content.js, styles.css, components/
 ├── docs/
 │   ├── schema.md
 │   └── solution_tree.md
